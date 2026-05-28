@@ -1368,6 +1368,517 @@ html, body {
 }
 
 /* ====================================================================
+   BRIEF/REVEAL — PORTFOLIO ALLOCATION LAYOUT (R4)
+   ==================================================================== */
+.scene--brief--portfolio-allocation,
+.scene--reveal--portfolio-allocation {
+  background: linear-gradient(135deg, #0B1838 0%, #1a2849 55%, #2a2440 100%);
+}
+
+/* News block — rate cut headline + scenario */
+.alloc {
+  position: absolute;
+  top: 130px; left: 64px; right: 64px;
+  z-index: 3;
+}
+.alloc__news {
+  border: 1px solid rgba(201,169,97,0.5);
+  background:
+    linear-gradient(180deg, rgba(244,232,200,0.92) 0%, rgba(232,216,176,0.88) 100%);
+  border-radius: 4px;
+  padding: 18px 28px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  box-shadow:
+    0 0 0 1px rgba(212,175,55,0.2) inset,
+    0 8px 26px rgba(0,0,0,0.45);
+}
+.alloc__dateline {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: 12px; letter-spacing: 0.4em;
+  color: #8A6A1F; margin-bottom: 6px;
+}
+.alloc__headline {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 38px; line-height: 1.05;
+  color: #2A1410; letter-spacing: 0.02em;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+}
+.alloc__subheadline {
+  font-family: 'IM Fell English', serif; font-style: italic;
+  font-size: 18px; color: rgba(20,10,4,0.78);
+}
+.alloc__scenario {
+  font-family: 'IM Fell English', serif; font-style: italic;
+  font-size: 22px; line-height: 1.4;
+  color: rgba(244,232,200,0.92);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+  margin-bottom: 12px;
+  text-align: center;
+}
+.alloc__rules {
+  display: inline-flex; align-items: baseline; gap: 16px;
+  margin: 0 auto;
+  padding: 10px 26px;
+  border: 1px solid rgba(201,169,97,0.45);
+  border-radius: 4px;
+  background: rgba(11,24,56,0.5);
+  position: relative; left: 50%; transform: translateX(-50%);
+}
+.alloc__rules-label {
+  font-family: 'Cinzel', serif; font-size: 12px;
+  letter-spacing: 0.4em; color: #C9A961;
+}
+.alloc__rules-value {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: 16px; letter-spacing: 0.14em;
+  color: #D4AF37;
+}
+
+/* Slot saham (5 kolom horizontal) */
+.brief__options--5,
+.reveal__options--5 {
+  grid-template-columns: repeat(5, 1fr) !important;
+  grid-template-rows: 280px !important;
+  gap: 18px !important;
+  align-content: center;
+}
+.scene--brief--portfolio-allocation .brief__options {
+  position: absolute;
+  top: 540px;
+  left: 64px; right: 64px;
+  bottom: auto;
+  z-index: 3;
+}
+.scene--reveal--portfolio-allocation .reveal__options {
+  position: absolute;
+  top: 420px;
+  left: 64px; right: 64px;
+  bottom: auto;
+  z-index: 3;
+}
+
+.brief-opt__frame--slot {
+  border: 1px solid rgba(201,169,97,0.45);
+  background: linear-gradient(180deg,
+    rgba(11,24,56,0.78) 0%, rgba(26,40,73,0.7) 100%);
+  border-radius: 4px;
+  padding: 16px 14px 14px;
+  text-align: center;
+  position: relative;
+  min-height: 240px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+}
+.brief-opt__frame--slot::before,
+.brief-opt__frame--slot::after {
+  content: ''; position: absolute; left: 8px; right: 8px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,169,97,0.6), transparent);
+}
+.brief-opt__frame--slot::before { top: 4px; }
+.brief-opt__frame--slot::after  { bottom: 4px; }
+
+.slot__key {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 28px; color: #D4AF37; line-height: 1;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 10px rgba(212,175,55,0.5));
+}
+.slot__ticker {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 32px; line-height: 1;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #F1D77E 0%, #D4AF37 60%, #A8842B 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.slot__name {
+  font-family: 'Cormorant Garamond', serif; font-size: 16px;
+  color: rgba(244,232,200,0.92); margin-top: 2px;
+}
+.slot__sector {
+  font-family: 'Cinzel', serif; font-size: 11px;
+  letter-spacing: 0.3em; color: #C9A961;
+}
+.slot__divider {
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,169,97,0.6), transparent);
+  margin: 8px 0 6px;
+}
+.slot__alloc-label {
+  font-family: 'Cinzel', serif; font-size: 10px;
+  letter-spacing: 0.4em; color: rgba(201,169,97,0.7);
+}
+.slot__alloc-box {
+  border: 1px dashed rgba(201,169,97,0.45);
+  border-radius: 3px;
+  padding: 6px 14px;
+  margin-top: 4px;
+  background: rgba(11,24,56,0.4);
+  min-width: 80px;
+}
+.slot__alloc-blank {
+  font-family: 'Cinzel', serif; font-size: 18px;
+  color: rgba(212,175,55,0.55);
+  letter-spacing: 0.08em;
+}
+.brief-opt__frame--slot .brief-opt__hint {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 14px;
+  color: rgba(244,232,200,0.6);
+  margin-top: 6px;
+  line-height: 1.3;
+}
+
+/* Flip card (reveal only) */
+.slot-card-wrap {
+  perspective: 1400px;
+  width: 100%; height: 280px;
+}
+.slot-card {
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateY(0deg);
+  will-change: transform;
+}
+.slot-card__face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.slot-card__back {
+  transform: rotateY(180deg);
+}
+.slot-card__back .brief-opt__frame--slot {
+  background: linear-gradient(180deg,
+    rgba(48,38,12,0.86) 0%, rgba(80,60,18,0.74) 100%);
+  border-color: rgba(212,175,55,0.6);
+  box-shadow:
+    0 0 0 1px rgba(212,175,55,0.25) inset,
+    0 0 30px rgba(212,175,55,0.3);
+}
+.slot__outcome {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-top: 10px;
+}
+.slot__outcome-arrow {
+  font-size: 38px; font-weight: 900; line-height: 1;
+}
+.slot__outcome-pct {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 42px; line-height: 1;
+}
+.slot--out-up .slot__outcome-arrow,
+.slot--out-up .slot__outcome-pct {
+  color: #7FA46B;
+  filter: drop-shadow(0 0 12px rgba(127,164,107,0.55));
+}
+.slot--out-down .slot__outcome-arrow,
+.slot--out-down .slot__outcome-pct {
+  color: #B33A3A;
+  filter: drop-shadow(0 0 12px rgba(179,58,58,0.55));
+}
+.slot--out-flat .slot__outcome-arrow,
+.slot--out-flat .slot__outcome-pct {
+  color: #C9A961;
+}
+.slot__outcome-label {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: 13px; letter-spacing: 0.4em;
+  color: rgba(244,232,200,0.78);
+  margin-top: 4px;
+}
+.slot__badge {
+  width: 64px; height: 64px;
+  object-fit: contain;
+  margin: 8px auto 4px;
+  display: block;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 12px rgba(212,175,55,0.45));
+}
+.slot__mult {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 24px; color: #D4AF37;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 12px rgba(212,175,55,0.55);
+}
+
+.reveal-opt--out-down .slot-card__back .brief-opt__frame--slot {
+  background: linear-gradient(180deg,
+    rgba(60,18,24,0.88) 0%, rgba(80,28,38,0.74) 100%);
+  border-color: rgba(179,58,58,0.6);
+  box-shadow: 0 0 0 1px rgba(179,58,58,0.25) inset, 0 0 28px rgba(179,58,58,0.3);
+}
+
+.reveal-opt.is-highlight .slot-card__back .brief-opt__frame--slot {
+  animation: slotHighlightPulse 1.6s ease-in-out infinite alternate;
+}
+@keyframes slotHighlightPulse {
+  from { box-shadow: 0 0 0 1px rgba(212,175,55,0.3) inset, 0 0 22px rgba(212,175,55,0.35); }
+  to   { box-shadow: 0 0 0 1px rgba(212,175,55,0.55) inset, 0 0 46px rgba(212,175,55,0.7); }
+}
+
+/* Reveal news (mirror brief) — sedikit lebih ringkas */
+.scene--reveal--portfolio-allocation .alloc {
+  top: 150px;
+}
+.scene--reveal--portfolio-allocation .alloc__news {
+  padding: 14px 24px 12px;
+}
+.scene--reveal--portfolio-allocation .alloc__headline { font-size: 32px; }
+.scene--reveal--portfolio-allocation .alloc__subheadline { font-size: 16px; }
+
+/* ====================================================================
+   BRIEF/REVEAL — SHIELD GRID LAYOUT (R5)
+   ==================================================================== */
+.scene--brief--shield-grid,
+.scene--reveal--shield-grid {
+  background: linear-gradient(135deg, #200810 0%, #3a0e1a 45%, #1a0814 100%);
+}
+/* Tint override — emergency red wash di atas bg image */
+.scene--brief--shield-grid .brief__bg-tint,
+.scene--reveal--shield-grid .reveal__bg-tint {
+  background: linear-gradient(180deg,
+    rgba(139,30,63,0.45) 0%, rgba(60,10,20,0.25) 35%,
+    rgba(40,8,16,0.5) 75%, rgba(20,4,8,0.78) 100%);
+}
+
+/* Crisis news banner */
+.crisis {
+  position: absolute;
+  top: 130px; left: 64px; right: 64px;
+  z-index: 3;
+  height: 200px;
+}
+.crisis__panel {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  filter: drop-shadow(0 12px 30px rgba(0,0,0,0.55));
+}
+.crisis__overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 22px 38px;
+  background: linear-gradient(180deg,
+    rgba(40,8,12,0.55) 0%, rgba(80,20,30,0.35) 60%,
+    rgba(20,4,8,0.55) 100%);
+  border-radius: 4px;
+  border: 2px solid rgba(212,80,80,0.6);
+  box-shadow: 0 0 0 1px rgba(255,140,120,0.25) inset, 0 0 36px rgba(180,40,40,0.4);
+}
+.crisis__siren {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 14px; letter-spacing: 0.45em;
+  color: #FFB060;
+  margin-bottom: 8px;
+  text-shadow: 0 0 14px rgba(255,80,40,0.6);
+  animation: sirenFlash 1.2s ease-in-out infinite alternate;
+}
+@keyframes sirenFlash {
+  from { opacity: 0.7; }
+  to   { opacity: 1.0; }
+}
+.crisis__headline {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 44px; line-height: 1.0;
+  letter-spacing: 0.04em;
+  color: #FFE6D0;
+  text-shadow:
+    0 0 8px rgba(255,80,40,0.6),
+    0 2px 10px rgba(0,0,0,0.6);
+  margin-bottom: 6px;
+}
+.crisis__subheadline {
+  font-family: 'IM Fell English', serif; font-style: italic;
+  font-size: 20px; color: rgba(255,220,200,0.92);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+.crisis__scenario {
+  position: absolute;
+  top: 350px; left: 64px; right: 64px;
+  z-index: 3;
+  font-family: 'IM Fell English', serif; font-style: italic;
+  font-size: 22px; line-height: 1.4;
+  color: rgba(255,232,212,0.95);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.crisis__hint {
+  position: absolute;
+  top: 430px; left: 64px; right: 64px;
+  z-index: 3;
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 17px; color: rgba(255,210,180,0.72);
+  padding: 8px 14px;
+  border-top: 1px solid rgba(212,80,80,0.3);
+  border-bottom: 1px solid rgba(212,80,80,0.3);
+  max-width: 1100px; margin: 0 auto;
+  letter-spacing: 0.04em;
+}
+
+/* Shield grid 6 cards 2×3 */
+.brief__options--6,
+.reveal__options--6 {
+  grid-template-columns: repeat(3, 1fr) !important;
+  grid-template-rows: repeat(2, 1fr) !important;
+  gap: 18px 28px !important;
+}
+.scene--brief--shield-grid .brief__options {
+  position: absolute;
+  top: 510px; left: 200px; right: 200px;
+  bottom: 90px;
+  z-index: 3;
+}
+.scene--reveal--shield-grid .reveal__options {
+  position: absolute;
+  top: 230px; left: 200px; right: 200px;
+  bottom: 130px;
+  z-index: 3;
+}
+
+.brief-opt__frame--shield,
+.reveal-opt__frame--shield {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: center;
+  position: relative;
+  height: 100%;
+}
+.shield__stage {
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  will-change: transform, opacity;
+}
+.shield__base,
+.shield__glow,
+.shield__crack {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 92%; max-height: 92%;
+  width: auto; height: auto;
+  pointer-events: none;
+}
+.shield__base {
+  filter: drop-shadow(0 8px 22px rgba(0,0,0,0.6));
+  z-index: 1;
+}
+.shield__glow {
+  z-index: 2;
+  opacity: 0;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 20px rgba(255,210,120,0.6));
+  will-change: opacity, transform;
+}
+.shield__crack {
+  z-index: 3;
+  opacity: 0;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 12px rgba(80,20,30,0.7));
+  will-change: opacity, transform;
+}
+.shield__content {
+  position: relative;
+  z-index: 4;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+  padding: 18px 12px;
+  pointer-events: none;
+}
+.shield__key {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 28px; line-height: 1;
+  color: #FFD96A;
+  filter: drop-shadow(0 0 10px rgba(255,200,80,0.55));
+  margin-bottom: 4px;
+}
+.shield__label {
+  font-family: 'Cinzel', serif; font-weight: 700;
+  font-size: 18px; letter-spacing: 0.06em;
+  color: #FFE8C8;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  line-height: 1.15;
+}
+.shield__class {
+  font-family: 'Cinzel', serif; font-size: 11px;
+  letter-spacing: 0.32em;
+  color: rgba(255,200,160,0.72);
+  margin-top: 4px;
+}
+
+/* State classes added by handler */
+.reveal-opt--safe .shield__key {
+  color: #FFD96A;
+  animation: safeKeyPulse 1.4s ease-in-out infinite alternate;
+}
+@keyframes safeKeyPulse {
+  from { filter: drop-shadow(0 0 10px rgba(255,200,80,0.4)); }
+  to   { filter: drop-shadow(0 0 28px rgba(255,210,120,0.95)); }
+}
+.reveal-opt--broken {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+.reveal-opt--broken .shield__label,
+.reveal-opt--broken .shield__class {
+  color: rgba(200,160,140,0.55);
+}
+
+/* Storm overlay (di-trigger handler dengan opacity tween) */
+.crisis__storm {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: screen;
+  filter: brightness(1.2);
+  will-change: opacity;
+}
+
+/* "THE WISE TRIO" label muncul di tengah grid */
+.crisis__trio-label {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: 56px; letter-spacing: 0.14em;
+  color: #FFD96A;
+  text-shadow:
+    0 0 16px rgba(255,200,80,0.85),
+    0 0 40px rgba(255,180,60,0.55),
+    0 4px 14px rgba(0,0,0,0.6);
+  background: linear-gradient(180deg, rgba(60,40,12,0.55), rgba(11,24,56,0.85));
+  padding: 14px 38px;
+  border: 1px solid rgba(212,175,55,0.7);
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+.scene--reveal--shield-grid .crisis {
+  top: 130px; height: 80px;   /* reveal news lebih ringkas */
+}
+.scene--reveal--shield-grid .crisis__overlay {
+  padding: 12px 24px;
+}
+.scene--reveal--shield-grid .crisis__headline { font-size: 28px; margin-bottom: 0; }
+.scene--reveal--shield-grid .crisis__subheadline { display: none; }
+
+/* ====================================================================
    DEBUG HUD (di luar stage, tidak ikut scale)
    ==================================================================== */
 #debug-hud {

@@ -2,10 +2,12 @@
  * scenes/templates/brief.js — Template "Brief" screen (skenario + opsi).
  *
  * Router layout by cfg.brief.layout (string):
- *   - 'chart'      (R1) : SVG candlestick di tengah + 3 opsi mini-card.
- *   - 'newspaper'  (R2) : koran Lyndell Journal + headline + 4 sektor card.
- *   - 'macro-race' (R3) : panel makro 4 indikator + 4 runner di starting line.
- *   - absent       defaults ke 'chart' (back-compat R1).
+ *   - 'chart'                 (R1) : SVG candlestick di tengah + 3 opsi mini-card.
+ *   - 'newspaper'             (R2) : koran Lyndell Journal + headline + 4 sektor card.
+ *   - 'macro-race'            (R3) : panel makro 4 indikator + 4 runner di starting line.
+ *   - 'portfolio-allocation'  (R4) : rate-cut headline + 5 slot saham + aturan alokasi.
+ *   - 'shield-grid'           (R5) : crisis alert + 6 perisai 2×3 (mood emergency).
+ *   - absent                  defaults ke 'chart' (back-compat R1).
  *
  * Header (crest + meta) & footer (hint SPACE) sama lintas layout.
  *
@@ -56,6 +58,56 @@
       <section class="brief__options brief__options--4 brief__options--sector"></section>
     `);
     renderOptionCards(root.querySelector('.brief__options'), cfg, 'newspaper');
+  }
+
+  /** Layout 'portfolio-allocation' (R4) — rate-cut headline + 5 slot saham
+   *  dengan aturan alokasi. Slot card hanya display ticker/sektor — peserta
+   *  isi nominal di Prophecy Card fisik. */
+  function buildPortfolioAllocationLayout(root, cfg) {
+    const b = cfg.brief;
+    const rules = b.allocationRules || {};
+    const rulesStr = [
+      rules.total      != null ? `TOTAL ${rules.total} W`      : '',
+      rules.minStocks  != null ? `MIN ${rules.minStocks} SAHAM`: '',
+      rules.maxPerStock!= null ? `MAX ${rules.maxPerStock}/SAHAM` : '',
+      rules.allowSkip               ? 'BOLEH SKIP'             : '',
+    ].filter(Boolean).join(' · ');
+
+    root.insertAdjacentHTML('beforeend', `
+      <section class="alloc">
+        <div class="alloc__news">
+          <div class="alloc__dateline">CROWN GAZETTE · MORNING EDITION</div>
+          <h2 class="alloc__headline">${b.headline || ''}</h2>
+          <p class="alloc__subheadline">${b.subheadline || ''}</p>
+        </div>
+        <p class="alloc__scenario">${b.scenario || ''}</p>
+        <div class="alloc__rules">
+          <span class="alloc__rules-label">ALLOCATION RULES</span>
+          <span class="alloc__rules-value">${rulesStr}</span>
+        </div>
+      </section>
+      <section class="brief__options brief__options--5 brief__options--alloc"></section>
+    `);
+    renderOptionCards(root.querySelector('.brief__options'), cfg, 'portfolio-allocation');
+  }
+
+  /** Layout 'shield-grid' (R5) — crisis alert merah + 6 perisai 2×3. */
+  function buildShieldGridLayout(root, cfg) {
+    const b = cfg.brief;
+    root.insertAdjacentHTML('beforeend', `
+      <section class="crisis">
+        ${b.crisisPanel ? `<img class="crisis__panel" src="${b.crisisPanel}" alt="">` : ''}
+        <div class="crisis__overlay">
+          <div class="crisis__siren">◈ EMERGENCY BROADCAST ◈</div>
+          <h2 class="crisis__headline">${b.headline || ''}</h2>
+          <p class="crisis__subheadline">${b.subheadline || ''}</p>
+        </div>
+      </section>
+      <p class="crisis__scenario">${b.scenario || ''}</p>
+      ${b.hint ? `<p class="crisis__hint">${b.hint}</p>` : ''}
+      <section class="brief__options brief__options--6 brief__options--shield"></section>
+    `);
+    renderOptionCards(root.querySelector('.brief__options'), cfg, 'shield-grid');
   }
 
   /** Layout 'macro-race' (R3) — dashboard makro + 4 runner di starting line. */
@@ -111,6 +163,40 @@
             <div class="brief-opt__hint">${opt.hint || ''}</div>
           </div>
         `;
+      } else if (layout === 'portfolio-allocation') {
+        // Slot saham — ticker besar di tengah, sektor di bawah, hint italic.
+        // Allocation field kosong (placeholder visual) — peserta isi fisik.
+        card.innerHTML = `
+          <div class="brief-opt__frame brief-opt__frame--slot">
+            <div class="slot__key">${opt.key}</div>
+            <div class="slot__ticker">${opt.ticker || opt.label || ''}</div>
+            <div class="slot__name">${opt.name || ''}</div>
+            <div class="slot__sector">${opt.sector || ''}</div>
+            <div class="slot__divider"></div>
+            <div class="slot__alloc-label">ALLOCATION</div>
+            <div class="slot__alloc-box">
+              <span class="slot__alloc-blank">— W</span>
+            </div>
+            <div class="brief-opt__hint">${opt.hint || ''}</div>
+          </div>
+        `;
+      } else if (layout === 'shield-grid') {
+        // Perisai 2×3 — pakai b5-03 sebagai bg, label aset & kelas di tengah.
+        const shieldImg = (ASSET_MANIFEST.round5 && ASSET_MANIFEST.round5.shieldEmpty) || '';
+        card.innerHTML = `
+          <div class="brief-opt__frame brief-opt__frame--shield">
+            <div class="shield__stage">
+              <img class="shield__base" src="${shieldImg}" alt="">
+              <img class="shield__glow"   src="${ASSET_MANIFEST.round5.shieldGlow}"    alt="">
+              <img class="shield__crack"  src="${ASSET_MANIFEST.round5.shieldCracked}" alt="">
+              <div class="shield__content">
+                <div class="shield__key">${opt.key}</div>
+                <div class="shield__label">${opt.label || ''}</div>
+                <div class="shield__class">${opt.klass || ''}</div>
+              </div>
+            </div>
+          </div>
+        `;
       } else {
         // chart (default)
         card.innerHTML = `
@@ -141,6 +227,29 @@
         ];
         if (layout === 'newspaper' && cfg.brief.journalImg) assets.push(cfg.brief.journalImg);
         if (layout === 'macro-race' && cfg.brief.raceTrackImg) assets.push(cfg.brief.raceTrackImg);
+        if (layout === 'shield-grid') {
+          if (cfg.brief.crisisPanel) assets.push(cfg.brief.crisisPanel);
+          // shield base + state overlays (warmkan cache supaya reveal mulus)
+          if (ASSET_MANIFEST.round5) {
+            assets.push(
+              ASSET_MANIFEST.round5.shieldEmpty,
+              ASSET_MANIFEST.round5.shieldGlow,
+              ASSET_MANIFEST.round5.shieldCracked,
+              ASSET_MANIFEST.round5.stormBg,
+              ASSET_MANIFEST.round5.survivalRevealBg
+            );
+          }
+        }
+        if (layout === 'portfolio-allocation' && ASSET_MANIFEST.round4) {
+          // Badges + reveal bg untuk warmkan cache reveal scene.
+          assets.push(
+            ASSET_MANIFEST.round4.revealCalcBg,
+            ASSET_MANIFEST.round4.badges.positive,
+            ASSET_MANIFEST.round4.badges.negative,
+            ASSET_MANIFEST.round4.badges.neutral,
+            ASSET_MANIFEST.round4.badges.bonus
+          );
+        }
         // option icons / runners
         if (cfg.options) {
           cfg.options.forEach(o => {
@@ -156,7 +265,19 @@
       build(root) {
         root.classList.add('scene--brief');
         root.classList.add('scene--brief--' + layout);
-        const wagerStr = cfg.wager ? `${cfg.wager.min}–${cfg.wager.max}` : '—';
+        // Wager string mendukung 3 mode:
+        //   - {forced: N}           → "N (forced)"  (R4: 100 wajib)
+        //   - {min, max, mode:'package'} → "min–max (paket)"  (R5)
+        //   - {min, max}            → "min–max"     (R1–R3 default)
+        let wagerStr = '—';
+        if (cfg.wager) {
+          if (cfg.wager.forced != null) {
+            wagerStr = `${cfg.wager.forced} · FORCED`;
+          } else if (cfg.wager.min != null && cfg.wager.max != null) {
+            wagerStr = `${cfg.wager.min}–${cfg.wager.max}`;
+            if (cfg.wager.mode === 'package') wagerStr += ' · PAKET';
+          }
+        }
 
         // BG wrap — image cuma kalau cfg.brief.bg ada (R1).
         // Kalau null (R2/R3) → CSS gradient yg ambil over.
@@ -190,9 +311,11 @@
         layoutWrap.className = 'brief__layout brief__layout--' + layout;
         root.insertBefore(layoutWrap, footer);
 
-        if (layout === 'newspaper')      buildNewspaperLayout(layoutWrap, cfg);
-        else if (layout === 'macro-race') buildMacroRaceLayout(layoutWrap, cfg);
-        else                              buildChartLayout(layoutWrap, cfg);
+        if (layout === 'newspaper')                  buildNewspaperLayout(layoutWrap, cfg);
+        else if (layout === 'macro-race')             buildMacroRaceLayout(layoutWrap, cfg);
+        else if (layout === 'portfolio-allocation')   buildPortfolioAllocationLayout(layoutWrap, cfg);
+        else if (layout === 'shield-grid')            buildShieldGridLayout(layoutWrap, cfg);
+        else                                          buildChartLayout(layoutWrap, cfg);
       },
 
       onEnter(ctx) {
@@ -201,6 +324,12 @@
         const header = r.querySelector('.brief__header');
         const footer = r.querySelector('.brief__footer');
         const opts   = r.querySelectorAll('.brief-opt');
+
+        // Layout 'shield-grid' (R5) — beep heartbeat sekali pas masuk
+        // (mood emergency, jangan loop biar nggak mengganggu briefing music)
+        if (layout === 'shield-grid') {
+          ctx.audio.playSFX('heartbeat', 0.55);
+        }
 
         // Untuk layout 'chart': inject SVG candlestick (existing logic)
         if (layout === 'chart' && cfg.brief.chart && window.ChartHelper) {

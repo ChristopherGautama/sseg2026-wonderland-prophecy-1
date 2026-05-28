@@ -9,6 +9,8 @@
  *   - 'chart-fog'        (R1) : kabut emas tersibak + extension candle naik
  *   - 'newspaper-stamp'  (R2) : koran flip + cap CONFIRMED di sektor benar
  *   - 'sector-race'      (R3) : 4 sektor balapan, winner sprint ke finish
+ *   - 'portfolio-flip'   (R4) : 5 slot saham flip satu-per-satu + outcome stamp
+ *   - 'shield-crack'     (R5) : 3 perisai salah retak, 3 benar glow + WISE TRIO
  *
  * Tambah handler baru di Fase berikut → cukup append entry ke REVEAL_HANDLERS,
  * dan kalau perlu layout reveal baru → append builder di REVEAL_LAYOUTS.
@@ -245,6 +247,187 @@
       tl.add(() => { ctx._revealed = true; }, afterAll + 0.4);
       ctx.timelines.push(tl);
     },
+
+    /**
+     * 'portfolio-flip' (R4):
+     * 1. 5 slot saham flip rotateY 180° → reveal "back face"
+     *    (outcome stamp + arrow + multiplier badge), stagger 0.35s.
+     * 2. Tiap flip: SFX coin (chips) + sub-SFX score di winner.
+     * 3. Setelah semua flip: 2 slot yg di highlightKeys (best & worst)
+     *    di-pulse + scale untuk pelajaran. Lainnya tetap visible.
+     * 4. Verdict text muncul di bawah.
+     */
+    'portfolio-flip'(ctx, cfg, api) {
+      const slots = Array.from(api.optionEls);
+      const verdict = api.root.querySelector('.reveal__verdict');
+      const highlightKeys = (cfg.reveal && cfg.reveal.highlightKeys) || [];
+
+      const tl = gsap.timeline();
+      tl.add(() => ctx.audio.playSFX('reveal', 0.7), 0);
+
+      slots.forEach((slot, i) => {
+        const card    = slot.querySelector('.slot-card');
+        const back    = slot.querySelector('.slot-card__back');
+        const opt     = cfg.options.find(o => o.key === slot.dataset.optKey) || {};
+        const delay   = 0.4 + i * 0.35;
+        const isWinner = opt.outcomeDir === 'up'   && opt.outcomeMult >= 1.5;
+        const isLoser  = opt.outcomeDir === 'down';
+
+        // mark direction class supaya CSS bisa style (up/down/flat)
+        slot.classList.add('reveal-opt--out-' + (opt.outcomeDir || 'flat'));
+
+        // flip card 180° (front rotateY: 0 → -180, back stay at 180 → 0)
+        if (card) {
+          tl.to(card, {
+            rotateY: 180, duration: 0.6, ease: 'power2.inOut',
+          }, delay);
+        }
+        // back face: set initial sebelum flip (rotateY 180), tampak setelah flip
+        if (back) gsap.set(back, { rotateY: 180 });
+
+        // SFX coin saat slot membuka
+        tl.add(() => {
+          ctx.audio.playSFX('chips', 0.55);
+          if (isWinner) ctx.audio.playSFX('score', 0.6);
+        }, delay + 0.25);
+      });
+
+      // Setelah semua flip: pulse highlight pada best/worst
+      const afterFlips = 0.4 + slots.length * 0.35 + 0.5;
+      tl.add(() => {
+        slots.forEach(slot => {
+          if (highlightKeys.includes(slot.dataset.optKey)) {
+            slot.classList.add('is-highlight');
+            gsap.fromTo(slot,
+              { scale: 1 },
+              { scale: 1.06, duration: 0.35, ease: 'back.out(2)', yoyo: true, repeat: 1 }
+            );
+          }
+        });
+      }, afterFlips);
+
+      // Verdict text
+      if (verdict && cfg.reveal.verdictText) {
+        verdict.textContent = cfg.reveal.verdictText;
+        tl.to(verdict, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, afterFlips + 0.2);
+      }
+
+      tl.add(() => { ctx._revealed = true; }, afterFlips + 0.5);
+      ctx.timelines.push(tl);
+    },
+
+    /**
+     * 'shield-crack' (R5):
+     * 1. Storm overlay menerjang (bg storm fade in + shake).
+     * 2. 3 perisai SALAH (D/E/F) → crack overlay opacity 0 → 1 + SFX glass +
+     *    shake + dim. Stagger 0.18s.
+     * 3. 3 perisai BENAR (A/B/C) → gold glow fade in (mix-blend-mode screen) +
+     *    scale up + SFX correct/bell + sparkle. Stagger 0.18s.
+     * 4. "THE WISE TRIO" label muncul di tengah grid.
+     * 5. Verdict text muncul di bawah.
+     */
+    'shield-crack'(ctx, cfg, api) {
+      const shields = Array.from(api.optionEls);
+      const verdict = api.root.querySelector('.reveal__verdict');
+      const stormBg = api.root.querySelector('.crisis__storm');
+      const trio    = api.root.querySelector('.crisis__trio-label');
+      const trioLabel = (cfg.reveal && cfg.reveal.trioLabel) || 'THE WISE TRIO';
+
+      // Determine safe vs broken — pakai opt.isSafe (true = correct)
+      const safeShields  = shields.filter(s => {
+        const opt = cfg.options.find(o => o.key === s.dataset.optKey);
+        return opt && opt.isSafe;
+      });
+      const wrongShields = shields.filter(s => !safeShields.includes(s));
+
+      const tl = gsap.timeline();
+
+      // ---- 1) Storm masuk ----
+      tl.add(() => ctx.audio.playSFX('storm', 0.7), 0);
+      if (stormBg) {
+        tl.to(stormBg, { opacity: 0.7, duration: 0.6, ease: 'power1.out' }, 0);
+        // shake grid (bukan root, supaya tidak interferensi dgn scene transform)
+        const grid = api.root.querySelector('.reveal__options--shield');
+        if (grid) {
+          ctx.timelines.push(gsap.to(grid, {
+            x: 4, duration: 0.07, yoyo: true, repeat: 12,
+            ease: 'sine.inOut', delay: 0.2,
+            onComplete: () => gsap.set(grid, { x: 0 }),
+          }));
+        }
+      }
+
+      // ---- 2) Wrong shields RETAK ----
+      wrongShields.forEach((s, i) => {
+        const crack = s.querySelector('.shield__crack');
+        const stage = s.querySelector('.shield__stage');
+        const at = 0.7 + i * 0.18;
+
+        tl.add(() => ctx.audio.playSFX('wrong', 0.6), at);
+        if (crack) {
+          tl.fromTo(crack,
+            { opacity: 0, scale: 0.85 },
+            { opacity: 1, scale: 1, duration: 0.32, ease: 'power2.out' },
+            at
+          );
+        }
+        if (stage) {
+          tl.to(stage, {
+            x: 8, duration: 0.05, yoyo: true, repeat: 4,
+            ease: 'sine.inOut',
+            onComplete: () => gsap.set(stage, { x: 0 }),
+          }, at + 0.05);
+        }
+        tl.add(() => s.classList.add('reveal-opt--broken'), at + 0.3);
+      });
+
+      // ---- 3) Safe shields GLOW ----
+      const safeStart = 0.7 + wrongShields.length * 0.18 + 0.35;
+      safeShields.forEach((s, i) => {
+        const glow = s.querySelector('.shield__glow');
+        const at = safeStart + i * 0.18;
+
+        if (i === 0) {
+          tl.add(() => ctx.audio.playSFX('correct', 0.75), at);
+        }
+        if (glow) {
+          tl.fromTo(glow,
+            { opacity: 0, scale: 0.9 },
+            { opacity: 1, scale: 1.05, duration: 0.45, ease: 'power2.out' },
+            at
+          );
+        }
+        tl.fromTo(s,
+          { scale: 1 },
+          { scale: 1.05, duration: 0.35, ease: 'back.out(2)', yoyo: true, repeat: 1 },
+          at
+        );
+        tl.add(() => s.classList.add('reveal-opt--safe'), at + 0.2);
+      });
+
+      // ---- 4) "THE WISE TRIO" label ----
+      const trioAt = safeStart + safeShields.length * 0.18 + 0.2;
+      tl.add(() => ctx.audio.playSFX('bell', 0.75), trioAt);
+      if (trio) {
+        trio.textContent = trioLabel;
+        tl.fromTo(trio,
+          { opacity: 0, scale: 0.7, y: 20 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'back.out(2)' },
+          trioAt
+        );
+      }
+      // SFX sparkle untuk aksen magic
+      tl.add(() => ctx.audio.playSFX('sparkle', 0.6), trioAt + 0.2);
+
+      // ---- 5) Verdict ----
+      if (verdict && cfg.reveal.verdictText) {
+        verdict.textContent = cfg.reveal.verdictText;
+        tl.to(verdict, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, trioAt + 0.4);
+      }
+
+      tl.add(() => { ctx._revealed = true; }, trioAt + 0.8);
+      ctx.timelines.push(tl);
+    },
   };
 
   // Expose registry supaya fase berikut bisa nambah handler tanpa edit file ini
@@ -309,6 +492,43 @@
     renderRevealOptions(root.querySelector('.reveal__options'), cfg, 'newspaper');
   }
 
+  /** Layout 'portfolio-allocation' (R4) — 5 slot saham dengan flip card.
+   *  Tiap slot punya front (ticker/sektor) + back (outcome stamp + badge). */
+  function buildPortfolioAllocationLayout(root, cfg) {
+    const b = cfg.brief;
+    root.insertAdjacentHTML('beforeend', `
+      <section class="alloc alloc--reveal">
+        <div class="alloc__news">
+          <div class="alloc__dateline">CROWN GAZETTE · MARKET CLOSE</div>
+          <h2 class="alloc__headline">${b.headline || ''}</h2>
+          <p class="alloc__subheadline">${b.subheadline || ''}</p>
+        </div>
+      </section>
+      <section class="reveal__options reveal__options--5 reveal__options--alloc"></section>
+      <p class="reveal__verdict"></p>
+    `);
+    renderRevealOptions(root.querySelector('.reveal__options'), cfg, 'portfolio-allocation');
+  }
+
+  /** Layout 'shield-grid' (R5) — 6 perisai 2×3 + storm overlay + trio label. */
+  function buildShieldGridLayout(root, cfg) {
+    const b = cfg.brief;
+    root.insertAdjacentHTML('beforeend', `
+      <section class="crisis crisis--reveal">
+        ${b.crisisPanel ? `<img class="crisis__panel" src="${b.crisisPanel}" alt="">` : ''}
+        <div class="crisis__overlay">
+          <div class="crisis__siren">◈ AFTER THE STORM ◈</div>
+          <h2 class="crisis__headline">${b.headline || ''}</h2>
+        </div>
+      </section>
+      ${b.stormBg ? `<img class="crisis__storm no-intro" src="${b.stormBg}" alt="">` : ''}
+      <section class="reveal__options reveal__options--6 reveal__options--shield"></section>
+      <div class="crisis__trio-label no-intro"></div>
+      <p class="reveal__verdict"></p>
+    `);
+    renderRevealOptions(root.querySelector('.reveal__options'), cfg, 'shield-grid');
+  }
+
   /** Layout 'macro-race' (R3) — racetrack horizontal + 4 lane. */
   function buildMacroRaceLayout(root, cfg) {
     const b = cfg.brief;
@@ -371,6 +591,66 @@
             <div class="reveal-opt__target">${opt.target || ''}</div>
           </div>
         `;
+      } else if (layout === 'portfolio-allocation') {
+        // Flip card — front sama dgn brief slot, back tampil outcome
+        const dir   = opt.outcomeDir || 'flat';
+        const pct   = opt.outcomePct != null ? opt.outcomePct : 0;
+        const mult  = opt.outcomeMult != null ? opt.outcomeMult.toFixed(1) : '1.0';
+        const arrow = dir === 'up' ? '▲' : (dir === 'down' ? '▼' : '◆');
+        const sign  = dir === 'down' ? '-' : '+';
+
+        // Pilih badge image berdasarkan direction & magnitude.
+        let badgeImg = ASSET_MANIFEST.round4 && ASSET_MANIFEST.round4.badges.neutral;
+        if (opt.outcomeMult >= 1.5)            badgeImg = ASSET_MANIFEST.round4.badges.bonus;
+        else if (dir === 'down')               badgeImg = ASSET_MANIFEST.round4.badges.negative;
+        else if (dir === 'up')                 badgeImg = ASSET_MANIFEST.round4.badges.positive;
+
+        card.innerHTML = `
+          <div class="slot-card-wrap">
+            <div class="slot-card">
+              <div class="slot-card__face slot-card__front">
+                <div class="brief-opt__frame brief-opt__frame--slot">
+                  <div class="slot__key">${opt.key}</div>
+                  <div class="slot__ticker">${opt.ticker || ''}</div>
+                  <div class="slot__name">${opt.name || ''}</div>
+                  <div class="slot__sector">${opt.sector || ''}</div>
+                </div>
+              </div>
+              <div class="slot-card__face slot-card__back">
+                <div class="brief-opt__frame brief-opt__frame--slot slot--out-${dir}">
+                  <div class="slot__ticker">${opt.ticker || ''}</div>
+                  <div class="slot__outcome">
+                    <span class="slot__outcome-arrow">${arrow}</span>
+                    <span class="slot__outcome-pct">${sign}${pct}%</span>
+                  </div>
+                  <div class="slot__outcome-label">
+                    ${dir === 'up' ? 'NAIK' : (dir === 'down' ? 'TURUN' : 'FLAT')}
+                  </div>
+                  ${badgeImg ? `<img class="slot__badge" src="${badgeImg}" alt="">` : ''}
+                  <div class="slot__mult">×${mult}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (layout === 'shield-grid') {
+        const shieldImg = ASSET_MANIFEST.round5 && ASSET_MANIFEST.round5.shieldEmpty;
+        const glowImg   = ASSET_MANIFEST.round5 && ASSET_MANIFEST.round5.shieldGlow;
+        const crackImg  = ASSET_MANIFEST.round5 && ASSET_MANIFEST.round5.shieldCracked;
+        card.innerHTML = `
+          <div class="reveal-opt__frame reveal-opt__frame--shield">
+            <div class="shield__stage">
+              <img class="shield__base"  src="${shieldImg}" alt="">
+              <img class="shield__glow"  src="${glowImg}"   alt="">
+              <img class="shield__crack" src="${crackImg}"  alt="">
+              <div class="shield__content">
+                <div class="shield__key">${opt.key}</div>
+                <div class="shield__label">${opt.label || ''}</div>
+                <div class="shield__class">${opt.klass || ''}</div>
+              </div>
+            </div>
+          </div>
+        `;
       } else {
         card.innerHTML = `
           <div class="reveal-opt__frame">
@@ -401,6 +681,25 @@
         if (layout === 'macro-race') {
           if (cfg.brief.raceTrackImg)  assets.push(cfg.brief.raceTrackImg);
           if (cfg.brief.finishLineImg) assets.push(cfg.brief.finishLineImg);
+        }
+        if (layout === 'portfolio-allocation' && ASSET_MANIFEST.round4) {
+          assets.push(
+            ASSET_MANIFEST.round4.revealCalcBg,
+            ASSET_MANIFEST.round4.badges.positive,
+            ASSET_MANIFEST.round4.badges.negative,
+            ASSET_MANIFEST.round4.badges.neutral,
+            ASSET_MANIFEST.round4.badges.bonus
+          );
+        }
+        if (layout === 'shield-grid' && ASSET_MANIFEST.round5) {
+          assets.push(
+            ASSET_MANIFEST.round5.shieldEmpty,
+            ASSET_MANIFEST.round5.shieldGlow,
+            ASSET_MANIFEST.round5.shieldCracked,
+            ASSET_MANIFEST.round5.stormBg,
+            ASSET_MANIFEST.round5.survivalRevealBg
+          );
+          if (cfg.brief.crisisPanel) assets.push(cfg.brief.crisisPanel);
         }
         return assets.filter(Boolean);
       },
@@ -439,9 +738,11 @@
         layoutWrap.className = 'reveal__layout reveal__layout--' + layout;
         root.insertBefore(layoutWrap, footer);
 
-        if (layout === 'newspaper')        buildNewspaperLayout(layoutWrap, cfg);
-        else if (layout === 'macro-race')  buildMacroRaceLayout(layoutWrap, cfg);
-        else                                buildChartLayout(layoutWrap, cfg);
+        if (layout === 'newspaper')                  buildNewspaperLayout(layoutWrap, cfg);
+        else if (layout === 'macro-race')             buildMacroRaceLayout(layoutWrap, cfg);
+        else if (layout === 'portfolio-allocation')   buildPortfolioAllocationLayout(layoutWrap, cfg);
+        else if (layout === 'shield-grid')            buildShieldGridLayout(layoutWrap, cfg);
+        else                                          buildChartLayout(layoutWrap, cfg);
       },
 
       onEnter(ctx) {
@@ -477,7 +778,9 @@
 
         const layoutEl = r.querySelector('.reveal__layout');
         const layoutChildren = layoutEl
-          ? Array.from(layoutEl.children).filter(c => !c.classList.contains('reveal__options'))
+          ? Array.from(layoutEl.children).filter(c =>
+              !c.classList.contains('reveal__options') &&
+              !c.classList.contains('no-intro'))
           : [];
         gsap.set(layoutChildren, { opacity: 0, y: 20 });
 

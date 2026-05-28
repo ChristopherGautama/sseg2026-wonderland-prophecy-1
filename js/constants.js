@@ -432,8 +432,128 @@ const ROUNDS = {
       verdictText: 'SPYR sprint ke +18% · growth stock juara di rezim goldilocks.',
     },
   },
-  r4:    { id: 'r4',    trialNumeral: 'IV',   trialLabel: 'TRIAL THE FOURTH',  title: "The Oracle's Portfolio", tagline: 'Allocate 100 chips across the eight prophecies.',       multiplier: 1.5 },
-  r5:    { id: 'r5',    trialNumeral: 'V',    trialLabel: 'TRIAL THE FIFTH',   title: 'Black Swan Survival',   tagline: 'The storm comes. Will your shield hold?',                multiplier: 1.5 },
+  r4: {
+    id: 'r4',
+    trialNumeral: 'IV',
+    trialLabel:   'TRIAL THE FOURTH',
+    title:        "The Oracle's Portfolio",
+    tagline:      'A wise Oracle never bets all on one prophecy — the future favors the diversified.',
+    format:       'allocation',
+    multiplier:   1.5,
+    // Wager forced 100 Wizco — bukan range. Header brief baca flag .forced.
+    wager:        { min: 100, max: 100, forced: 100 },
+    durations:    { brief: 90, discuss: 600 },
+
+    brief: {
+      bg: 'assets/img/round4/b4-01-portfolio-allocation-bg.png',
+      layout: 'portfolio-allocation',
+      headline:     'CROWN RATE CUT · 5.0% → 4.25%',
+      subheadline:  'BANK OF LYNDELL CUTS CROWN RATE BY 75 BASIS POINTS',
+      scenario:
+        'Bank of Lyndell potong Crown Rate 75 bps menjadi 4.25%. Inflasi turun ' +
+        'ke 2.5%, Crown stabil, ekonomi mulai akselerasi pemulihan. Alokasikan ' +
+        '100 Wizco ke 5 saham di bawah — diversifikasi adalah kunci.',
+      // Aturan alokasi — Stage View display-only, peserta isi di Prophecy Card.
+      allocationRules: {
+        total:        100,
+        minStocks:    2,
+        maxPerStock:  50,
+        allowSkip:    true,
+      },
+    },
+
+    // 5 slot saham dengan outcome predetermined + multiplier.
+    // Field baru per opsi: ticker/name/sector/outcomePct/outcomeDir/outcomeMult.
+    // (R1–R3 tidak baca field ini — aman.)
+    options: [
+      { key: 'A', ticker: 'SPYR', name: 'Spire Tech',       sector: 'Teknologi',
+        label: 'SPYR · Teknologi',
+        outcomePct: 15, outcomeDir: 'up',   outcomeMult: 2.5,
+        hint: 'Growth stock + rate cut = juara' },
+      { key: 'B', ticker: 'NOCT', name: 'Nocturne Bank',    sector: 'Perbankan',
+        label: 'NOCT · Perbankan',
+        outcomePct:  4, outcomeDir: 'up',   outcomeMult: 1.0,
+        hint: 'NIM menyempit saat rate turun' },
+      { key: 'C', ticker: 'QULL', name: 'Quill Pharmaca',   sector: 'Farmasi',
+        label: 'QULL · Farmasi',
+        outcomePct:  2, outcomeDir: 'up',   outcomeMult: 1.0,
+        hint: 'Defensive — gerakan kecil' },
+      { key: 'D', ticker: 'MIRR', name: 'Mirror Retail',    sector: 'Ritel',
+        label: 'MIRR · Ritel',
+        outcomePct:  8, outcomeDir: 'up',   outcomeMult: 1.5,
+        hint: 'Daya beli pulih, konsumsi naik' },
+      { key: 'E', ticker: 'GRIN', name: 'Grinhouse Energy', sector: 'Energi Hijau',
+        label: 'GRIN · Energi Hijau',
+        outcomePct:  4, outcomeDir: 'down', outcomeMult: 0.5,
+        hint: 'Minyak konvensional murah → renewable tertekan' },
+    ],
+    // NOTE: tidak ada correctKey single — semua slot punya outcome sendiri.
+    // Reveal handler `portfolio-flip` highlight winner/loser via highlightKeys.
+
+    reveal: {
+      type: 'portfolio-flip',
+      // Untuk pelajaran: SPYR (×2.5 winner) & GRIN (satu-satunya turun)
+      highlightKeys: ['A', 'E'],
+      verdictText:
+        'Diversifikasi bijak — SPYR meledak ×2.5, GRIN tergerus. ' +
+        'Bagi rata, tidak semua telur dalam satu keranjang.',
+    },
+  },
+
+  r5: {
+    id: 'r5',
+    trialNumeral: 'V',
+    trialLabel:   'TRIAL THE FIFTH',
+    title:        'Black Swan Survival',
+    tagline:      'When the kingdom burns, only three shields will save you.',
+    format:       'graded-trio',
+    multiplier:   1.5,
+    // Wager range 30–150 sebagai PAKET (satu nilai untuk 3 aset, bukan per aset).
+    wager:        { min: 30, max: 150, mode: 'package' },
+    durations:    { brief: 90, discuss: 600 },
+
+    brief: {
+      bg: 'assets/img/round5/b5-01-black-swan-alert-bg.png',
+      layout: 'shield-grid',
+      crisisPanel:  'assets/img/round5/b5-02-crisis-news-panel.png',
+      stormBg:      'assets/img/round5/b5-06-storm-animation-bg.png',
+      headline:     'PANDEMIC STRIKES LYNDELL',
+      subheadline:  'CRIMSON FEVER OUTBREAK · 90-DAY LOCKDOWN',
+      scenario:
+        'Pasar crash 25%. Crown Rate dipotong darurat ke 1%. Deflasi 0.5%. ' +
+        'Pilih 3 dari 6 aset defensif yang akan SURVIVE badai ini.',
+      hint:
+        'True safe haven = likuid + counter-cyclical + bukan bagian dari ' +
+        'sistem yang sedang crash.',
+    },
+
+    // 6 aset defensif kandidat. Field baru per opsi: klass, isSafe.
+    options: [
+      { key: 'A', label: 'Gold',                  klass: 'Komoditas',  isSafe: true  },
+      { key: 'B', label: 'Cash · Crown Sterling', klass: 'Tunai',      isSafe: true  },
+      { key: 'C', label: 'Government Bond',       klass: 'Obligasi',   isSafe: true  },
+      { key: 'D', label: 'Deposito Berjangka',    klass: 'Perbankan',  isSafe: false },
+      { key: 'E', label: 'Bitcoin · Crypto Crown',klass: 'Crypto',     isSafe: false },
+      { key: 'F', label: 'Saham · Lyndell Index', klass: 'Equity',     isSafe: false },
+    ],
+    // Field baru spesifik graded-trio:
+    winningTrio: ['A', 'B', 'C'],
+    gradedTiers: [
+      { hit: 3, mult:  1.00, label: '3/3 · THE WISE TRIO' },
+      { hit: 2, mult:  0.33, label: '2/3 · PARTIAL HEDGE' },
+      { hit: 1, mult: -0.33, label: '1/3 · EXPOSED'       },
+      { hit: 0, mult: -0.50, label: '0/3 · OBLITERATED'   },
+    ],
+
+    reveal: {
+      type: 'shield-crack',
+      trioLabel:   'THE WISE TRIO',
+      verdictText:
+        'Gold, Cash, dan Government Bond bertahan. Deposito tergusur deflasi, ' +
+        'crypto crash, equity tenggelam bersama pasar.',
+    },
+  },
+
   r6:    { id: 'r6',    trialNumeral: 'VI',   trialLabel: 'TRIAL THE SIXTH',   title: 'The Catalyst Trial',    tagline: 'Which catalyst ignites the next bull?',                  multiplier: 1.8 },
   r7:    { id: 'r7',    trialNumeral: 'VII',  trialLabel: 'TRIAL THE SEVENTH', title: 'Wonderland IPO Battle', tagline: 'The bell rings. Four tickers debut. Bet on the survivor.', multiplier: 2.5 },
   bonus: { id: 'bonus', trialNumeral: '✦',    trialLabel: 'BONUS · THE REVERSALS', title: 'The Reversals',     tagline: 'Timeline cracks. Read the telegram — or skip the storm.', multiplier: 2.5 },
@@ -498,6 +618,33 @@ const PLACEHOLDER_SCORES = {
     { houseId: 'IV',   score: 160 },
     { houseId: 'X',    score: 120 },
   ],
+  // Setelah Ronde 4 — multiplier ×1.5, gap melebar karena diversification quality
+  // memisahkan tim yang allocate SPYR vs yang allocate GRIN.
+  r4: [
+    { houseId: 'VI',   score: 620 },
+    { houseId: 'IX',   score: 580 },
+    { houseId: 'II',   score: 525 },
+    { houseId: 'V',    score: 490 },
+    { houseId: 'III',  score: 440 },
+    { houseId: 'VII',  score: 395 },
+    { houseId: 'I',    score: 340 },
+    { houseId: 'VIII', score: 280 },
+    { houseId: 'IV',   score: 230 },
+    { houseId: 'X',    score: 175 },
+  ],
+  // Setelah Ronde 5 — pandemic crash. Tim yg salah perisai kena minus.
+  r5: [
+    { houseId: 'VI',   score: 820 },
+    { houseId: 'IX',   score: 760 },
+    { houseId: 'II',   score: 690 },
+    { houseId: 'V',    score: 620 },
+    { houseId: 'III',  score: 555 },
+    { houseId: 'VII',  score: 490 },
+    { houseId: 'I',    score: 405 },
+    { houseId: 'VIII', score: 320 },
+    { houseId: 'IV',   score: 240 },
+    { houseId: 'X',    score: 160 },
+  ],
 };
 
 /* ---------- SCENE PLAYLIST ----------
@@ -530,7 +677,21 @@ const SCENES = [
   'r3-leaderboard',
   // Halftime — rolling leaderboard 10 → 1
   'halftime',
-  // Fase 5+: 'r4-transition', 'r4-brief', ... dst
+  // Ronde 4 — portfolio-allocation layout + portfolio-flip reveal
+  'r4-transition',
+  'r4-brief',
+  'r4-timer',
+  'r4-status',
+  'r4-reveal',
+  'r4-leaderboard',
+  // Ronde 5 — shield-grid layout + shield-crack reveal
+  'r5-transition',
+  'r5-brief',
+  'r5-timer',
+  'r5-status',
+  'r5-reveal',
+  'r5-leaderboard',
+  // Fase 7+: 'r6-...' dst
 ];
 
 /* ---------- EXPORT (global, no module system) ----------

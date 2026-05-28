@@ -180,11 +180,25 @@ window.REVEAL_HANDLERS['my-new-type'] = function(ctx, cfg, api) {
 - `chart-fog` (R1) — kabut emas tersibak + extension candle naik
 - `newspaper-stamp` (R2) — koran flip + cap merah CONFIRMED + 3 sektor lain dim/shake
 - `sector-race` (R3) — 4 runner balapan sesuai `opt.speed`, winner sprint ke finish + bell + confetti
+- `portfolio-flip` (R4) — 5 slot saham flip 180° satu-per-satu + outcome stamp (arrow + %) + badge multiplier + pulse highlight winner/loser
+- `shield-crack` (R5) — storm overlay menerjang, 3 perisai salah retak (overlay b5-05 + shake), 3 perisai benar glow emas (b5-04 + scale), label "THE WISE TRIO" muncul + chime
 
 **Brief layout yang tersedia** (route by `cfg.brief.layout` di `templates/brief.js` + `templates/reveal.js`):
 - `chart` (R1, default) — SVG candlestick + 3 opsi card
 - `newspaper` (R2) — koran Lyndell + headline overlay + 4 sektor card (ikon)
 - `macro-race` (R3) — dashboard 4 indikator makro + 4 runner di starting line
+- `portfolio-allocation` (R4) — rate-cut news banner + 5 slot saham (ticker/sektor) + panel aturan alokasi
+- `shield-grid` (R5) — crisis alert banner merah (panel b5-02) + 6 perisai 2×3 dengan 3-state overlay (base/glow/crack)
+
+**Schema field opsional** (di-extend per fase; R1–R3 nggak baca — back-compat aman):
+- `wager.forced` (R4) — display "FORCED" alih-alih min–max
+- `wager.mode = 'package'` (R5) — display suffix "PAKET" (1 nominal untuk 3 aset)
+- `brief.allocationRules { total, minStocks, maxPerStock, allowSkip }` (R4)
+- `options[].ticker / name / sector / outcomePct / outcomeDir / outcomeMult` (R4) — flip card baca per-slot outcome
+- `options[].klass / isSafe` (R5) — shield handler routing safe vs broken
+- `winningTrio: ['A','B','C']` + `gradedTiers: [{ hit, mult, label }, ...]` (R5) — graded scoring (skor jalan di Admin Panel; reveal Stage View tampilkan visual outcome)
+- `reveal.highlightKeys: ['A','E']` (R4) — keys yang di-pulse setelah flip (best & worst untuk pelajaran)
+- `reveal.trioLabel` (R5) — label center yang muncul setelah 3 perisai benar glow
 
 ### Cara nambah ronde baru
 1. Lengkapi `ROUNDS.rN` di `constants.js` mengikuti skema di atas.
@@ -242,12 +256,12 @@ QULL Quill Pharmaca, MIRR Mirror Retail, GRIN Grinhouse Energy, TARO Tarot Media
   SceneManager (registry + lifecycle + crossfade + preload), scene file convention (`js/scenes/<id>.js`), operator hotkeys global, help overlay, audio unlock. Opening scene cinematic: Ken Burns bg, particle bintang emas, judul 2-baris stagger + glow pulse, subtitle, Wizco mascot bobbing, footer ornament, musik m01-opening + SFX sparkle.
 - **Fase 3 — Sub-Scene Template + Round 1: Chart Continuation** ✅
   6 factory template config-driven (transition/brief/timer/status/reveal/leaderboard) + ChartHelper SVG candlestick + fog reveal animator + pluggable `REVEAL_HANDLERS` registry. R1 dirangkai dari template dengan config di `ROUNDS.r1`. Reveal handler `chart-fog`: kabut emas tersibak dari tengah → extension candle naik ke 460 → opsi B highlight emas, A/C gray-out. Placeholder scores untuk leaderboard (TODO ganti via Admin Panel di Fase 8).
-- **Fase 4 — R2 Headline + R3 Sector Race + Halftime** ✅ (current)
+- **Fase 4 — R2 Headline + R3 Sector Race + Halftime** ✅
   Brief/reveal template di-extend dengan **layout routing** (`cfg.brief.layout`): `chart` (R1, default), `newspaper` (R2: koran Lyndell + 4 sektor card), `macro-race` (R3: dashboard makro + 4 runner di lintasan). Reveal handler bertambah: `newspaper-stamp` (koran flip + cap merah CONFIRMED slam di sektor benar + 3 lain dim/shake), `sector-race` (4 runner sprint horizontal sesuai `opt.speed`, winner sampai duluan ke finish line + bell + confetti). Halftime scene (`js/scenes/halftime.js`) — bukan template ronde, rolling leaderboard 10→1 dengan SFX shuffle, top-3 sparkle + glow, caption netral "THE RACE CONTINUES" untuk peringkat 8–10. Total nambah R2+R3 = 1 file config + 2 layout builder + 2 reveal handler + 2 file scene-wiring 8-baris.
-- **Fase 5 — Round 4: Oracle's Portfolio**
-  Portfolio allocation board, stock cards, reveal calculator, multiplier badges.
-- **Fase 7 — Round 5 & 6: Black Swan + Catalyst**
-  Crisis alert, shield system, storm animation. Catalyst trial scene + 5 catalyst icons.
+- **Fase 5 — R4 Portfolio + R5 Black Swan** ✅ (current)
+  2 layout brief baru (`portfolio-allocation`, `shield-grid`) + 2 reveal handler baru (`portfolio-flip`, `shield-crack`) — pluggable, R1–R3 nggak kesentuh. Schema config di-extend dengan field opsional: `wager.forced`/`wager.mode`, `brief.allocationRules`, per-option `outcomePct/outcomeDir/outcomeMult`/`klass`/`isSafe`, `winningTrio`/`gradedTiers` (graded scoring siap untuk Admin Panel Fase 8). R4 brief: news rate-cut + 5 slot saham (SPYR/NOCT/QULL/MIRR/GRIN) dengan aturan alokasi (total 100 · min 2 · max 50). R4 reveal: tiap slot flip 180° satu-per-satu, outcome stamp (▲/▼ + %) + badge mix-blend-mode screen + ×multiplier; SPYR (×2.5 winner) & GRIN (turun) di-pulse highlight. R5 brief: emergency banner merah pandemic + 6 perisai 2×3 dgn hint edukatif. R5 reveal: storm overlay + 3 perisai salah (D/E/F) retak (b5-05) + shake + dim, 3 perisai benar (A/B/C) glow emas (b5-04 screen blend) + scale + chime, label "THE WISE TRIO" muncul di tengah. PLACEHOLDER_SCORES.r4 & .r5 ditambah (akumulatif).
+- **Fase 7 — Round 6: Catalyst**
+  Catalyst trial scene + 5 catalyst icons.
 - **Fase 8 — Round 7 IPO + Bonus Reversal**
   IPO battle exchange floor, 4 ticker cards, bell reveal. Bonus telegram + timeline crack.
 - **Fase 9 — Halftime + Leaderboard + Final + Admin Panel**
