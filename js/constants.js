@@ -326,8 +326,112 @@ const ROUNDS = {
     },
   },
 
-  r2:    { id: 'r2',    trialNumeral: 'II',   trialLabel: 'TRIAL THE SECOND',  title: 'News Impact',           tagline: "Lyndell's Journal whispers — which sector burns?",      multiplier: 1.0 },
-  r3:    { id: 'r3',    trialNumeral: 'III',  trialLabel: 'TRIAL THE THIRD',   title: 'Sector Race',           tagline: 'Four runners. One finish line. Pick the swiftest.',     multiplier: 1.2 },
+  r2: {
+    id: 'r2',
+    trialNumeral: 'II',
+    trialLabel:   'TRIAL THE SECOND',
+    title:        'The Headline Strikes',
+    tagline:      'A single news shall shake the kingdom — but which house falls hardest?',
+    format:       'single-pick',
+    multiplier:   1.0,
+    wager:        { min: 20, max: 100 },
+    durations:    { brief: 90, discuss: 150 },
+
+    brief: {
+      bg: null,                          // null → CSS gradient navy
+      layout: 'newspaper',               // routing → buildNewspaperLayout
+      journalImg: 'assets/img/round2/b2-01-lyndell-journal-front-page.png',
+      cardFrame: 'assets/img/round2/b2-02-sector-option-card-frame.png',
+      headline: 'CROWN RATE SHOCK · 5% → 7%',
+      subheadline: 'BANK OF LYNDELL RAISES CROWN RATE FROM 5% TO 7%',
+      dateline: 'THE LYNDELL JOURNAL · EVENING EDITION',
+      scenario:
+        'Bank of Lyndell mengumumkan kenaikan Crown Rate darurat sebesar 200 ' +
+        'basis poin (5% → 7%) untuk menahan inflasi yang melampaui target. ' +
+        'Sektor mana yang paling diuntungkan dari rate hike ini?',
+    },
+
+    options: [
+      { key: 'A', label: 'SPYR · Teknologi',
+        target: 'Negative',
+        icon:   'assets/img/round2/icons/b2-03-sector-icon-technology.png',
+        hint:   'Growth stock — DCF terdiskon lebih besar saat rate naik.' },
+      { key: 'B', label: 'NOCT · Perbankan',
+        target: 'Positive',
+        icon:   'assets/img/round2/icons/b2-04-sector-icon-banking.png',
+        hint:   'Net Interest Margin melebar saat rate naik.' },
+      { key: 'C', label: 'PRPR · Property',
+        target: 'Negative',
+        icon:   'assets/img/round2/icons/b2-05-sector-icon-property-retail.png',
+        hint:   'Mortgage rate naik → demand properti turun.' },
+      { key: 'D', label: 'RBBT · Tambang',
+        target: 'Neutral',
+        icon:   'assets/img/round2/icons/b2-06-sector-icon-mining-commodity.png',
+        hint:   'Komoditas relatif stabil terhadap rate domestik.' },
+    ],
+    correctKey: 'B',
+
+    reveal: {
+      type: 'newspaper-stamp',
+      stampLabel:  'CONFIRMED',
+      verdictText: 'NOCT melonjak +14% · NIM melebar saat Crown Rate naik.',
+    },
+  },
+
+  r3: {
+    id: 'r3',
+    trialNumeral: 'III',
+    trialLabel:   'TRIAL THE THIRD',
+    title:        'Sector Race',
+    tagline:      'Four sectors run against time — only one shall touch the gold first.',
+    format:       'single-pick',
+    multiplier:   1.2,
+    wager:        { min: 20, max: 100 },
+    durations:    { brief: 90, discuss: 150 },
+
+    brief: {
+      bg: null,
+      layout: 'macro-race',
+      raceTrackImg:  'assets/img/round3/b3-01-race-track-bg.png',
+      finishLineImg: 'assets/img/round3/b3-07-finish-line-reveal-bg.png',
+      laneMarker:    'assets/img/round3/b3-02-lane-marker-frame.png',
+      scenario:
+        'Kondisi makro "goldilocks": Crown Rate stabil 5.0%, GDP tumbuh ' +
+        '+4.5% YoY, inflasi terkendali 3.2%, surplus dagang rekor. ' +
+        'Sektor mana yang menyentuh garis emas duluan dalam 30 hari?',
+      macro: [
+        { label: 'CROWN RATE',    value: '5.0%',      delta: 'stable', dir: 'neutral' },
+        { label: 'GDP GROWTH',    value: '+4.5% YoY', delta: 'rising', dir: 'up'      },
+        { label: 'INFLATION',     value: '3.2%',      delta: 'tame',   dir: 'neutral' },
+        { label: 'TRADE SURPLUS', value: 'RECORD',    delta: '↑',      dir: 'up'      },
+      ],
+    },
+
+    options: [
+      { key: 'A', label: 'SPYR · Teknologi',
+        target: '+18%', speed: 1.00,
+        runner: 'assets/img/round3/runners/b3-03-sector-runner-icon-technology.png',
+        hint:   'Growth stock paling diuntungkan rate rendah + GDP naik.' },
+      { key: 'B', label: 'NOCT · Perbankan',
+        target: '+9%',  speed: 0.75,
+        runner: 'assets/img/round3/runners/b3-04-sector-runner-icon-banking.png',
+        hint:   'Stabil tapi NIM tidak melebar saat rate flat.' },
+      { key: 'C', label: 'QULL · Consumer Staples',
+        target: '+6%',  speed: 0.65,
+        runner: 'assets/img/round3/runners/b3-05-sector-runner-icon-consumer-retail.png',
+        hint:   'Defensive — kurang gairah saat ekonomi tumbuh sehat.' },
+      { key: 'D', label: 'PRPR · Property',
+        target: '+11%', speed: 0.82,
+        runner: 'assets/img/round3/runners/b3-06-sector-runner-icon-property-defensive.png',
+        hint:   'Diuntungkan rate stabil tapi siklusnya lebih lambat.' },
+    ],
+    correctKey: 'A',
+
+    reveal: {
+      type: 'sector-race',
+      verdictText: 'SPYR sprint ke +18% · growth stock juara di rezim goldilocks.',
+    },
+  },
   r4:    { id: 'r4',    trialNumeral: 'IV',   trialLabel: 'TRIAL THE FOURTH',  title: "The Oracle's Portfolio", tagline: 'Allocate 100 chips across the eight prophecies.',       multiplier: 1.5 },
   r5:    { id: 'r5',    trialNumeral: 'V',    trialLabel: 'TRIAL THE FIFTH',   title: 'Black Swan Survival',   tagline: 'The storm comes. Will your shield hold?',                multiplier: 1.5 },
   r6:    { id: 'r6',    trialNumeral: 'VI',   trialLabel: 'TRIAL THE SIXTH',   title: 'The Catalyst Trial',    tagline: 'Which catalyst ignites the next bull?',                  multiplier: 1.8 },
@@ -341,6 +445,7 @@ const ROUNDS = {
  * TODO Fase 8: hapus konstanta ini setelah Admin Panel siap. */
 
 const PLACEHOLDER_SCORES = {
+  // Setelah Ronde 1 — score relatif rendah, segregasi belum tegas
   r1: [
     { houseId: 'VI',   score: 165 },
     { houseId: 'V',    score: 150 },
@@ -353,6 +458,46 @@ const PLACEHOLDER_SCORES = {
     { houseId: 'IV',   score:  50 },
     { houseId: 'X',    score:  35 },
   ],
+  // Setelah Ronde 2 — peringkat sedikit bergeser (peringkat tengah saling salip)
+  r2: [
+    { houseId: 'VI',   score: 285 },
+    { houseId: 'IX',   score: 260 },
+    { houseId: 'V',    score: 240 },
+    { houseId: 'II',   score: 215 },
+    { houseId: 'III',  score: 195 },
+    { houseId: 'VII',  score: 175 },
+    { houseId: 'I',    score: 150 },
+    { houseId: 'VIII', score: 120 },
+    { houseId: 'IV',   score: 100 },
+    { houseId: 'X',    score:  75 },
+  ],
+  // Setelah Ronde 3 — multiplier ×1.2 mulai memperlebar gap
+  r3: [
+    { houseId: 'VI',   score: 420 },
+    { houseId: 'IX',   score: 395 },
+    { houseId: 'II',   score: 360 },
+    { houseId: 'V',    score: 335 },
+    { houseId: 'III',  score: 305 },
+    { houseId: 'VII',  score: 275 },
+    { houseId: 'I',    score: 235 },
+    { houseId: 'VIII', score: 195 },
+    { houseId: 'IV',   score: 160 },
+    { houseId: 'X',    score: 120 },
+  ],
+  // Halftime — sama dengan r3 (akumulatif setelah 3 ronde pertama).
+  // Halftime scene render-nya rolling 10→1, beda style dari template lb.
+  halftime: [
+    { houseId: 'VI',   score: 420 },
+    { houseId: 'IX',   score: 395 },
+    { houseId: 'II',   score: 360 },
+    { houseId: 'V',    score: 335 },
+    { houseId: 'III',  score: 305 },
+    { houseId: 'VII',  score: 275 },
+    { houseId: 'I',    score: 235 },
+    { houseId: 'VIII', score: 195 },
+    { houseId: 'IV',   score: 160 },
+    { houseId: 'X',    score: 120 },
+  ],
 };
 
 /* ---------- SCENE PLAYLIST ----------
@@ -362,14 +507,30 @@ const PLACEHOLDER_SCORES = {
 
 const SCENES = [
   'opening',
-  // Ronde 1 — 6 sub-scene template-based
+  // Ronde 1 — 6 sub-scene template-based (chart-fog reveal)
   'r1-transition',
   'r1-brief',
   'r1-timer',
   'r1-status',
   'r1-reveal',
   'r1-leaderboard',
-  // Fase 4+: 'r2-transition', 'r2-brief', ... dst (pattern sama)
+  // Ronde 2 — newspaper layout + newspaper-stamp reveal
+  'r2-transition',
+  'r2-brief',
+  'r2-timer',
+  'r2-status',
+  'r2-reveal',
+  'r2-leaderboard',
+  // Ronde 3 — macro-race layout + sector-race reveal
+  'r3-transition',
+  'r3-brief',
+  'r3-timer',
+  'r3-status',
+  'r3-reveal',
+  'r3-leaderboard',
+  // Halftime — rolling leaderboard 10 → 1
+  'halftime',
+  // Fase 5+: 'r4-transition', 'r4-brief', ... dst
 ];
 
 /* ---------- EXPORT (global, no module system) ----------
