@@ -1,5 +1,5 @@
 /* ====================================================================
-   style.css — Stage View base styling.
+   style.css — Stage View base styling + scene styles.
    Layout strategi: viewport (body) = letterbox navy. #stage = canvas
    1920x1080 fixed di tengah, di-scale via JS pakai CSS transform.
    ==================================================================== */
@@ -21,7 +21,7 @@ html, body {
 }
 
 /* ---------- STAGE (design canvas 1920x1080) ----------
-   Posisikan di tengah viewport, scale di-handle oleh JS via transform.
+   Posisikan di tengah viewport, scale di-handle JS via transform.
    transform-origin: center center supaya scale konsisten dari tengah. */
 #stage {
   position: absolute;
@@ -35,92 +35,223 @@ html, body {
   overflow: hidden;
 }
 
-/* ---------- SCENE (full-bleed container di dalam stage) ---------- */
+/* ---------- SCENE (full-bleed container di dalam stage) ----------
+   SceneManager append .scene--<id> ke #stage. Opacity di-tween untuk
+   crossfade antar scene; will-change membantu kompositor. */
 .scene {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  will-change: opacity;
 }
 
-.scene__bg {
+/* ====================================================================
+   OPENING SCENE
+   ==================================================================== */
+
+.scene--opening {
+  background: #0B1838;
+}
+
+.opening__bg-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.opening__bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0;
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
-.scene__overlay {
+.opening__particles {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(11,24,56,0.0) 0%, rgba(11,24,56,0.55) 100%);
   z-index: 1;
+  pointer-events: none;
 }
 
-/* ---------- SYSTEM CHECK SCENE ---------- */
-.system-check {
+.opening__particle {
+  position: absolute;
+  background: #D4AF37;
+  border-radius: 50%;
+  box-shadow:
+    0 0 6px rgba(212, 175, 55, 0.85),
+    0 0 14px rgba(212, 175, 55, 0.45);
+  transform: translate(-50%, -50%);
+  will-change: opacity;
+}
+
+.opening__vignette {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(11, 24, 56, 0) 35%,
+      rgba(11, 24, 56, 0.5) 78%,
+      rgba(11, 24, 56, 0.82) 100%);
+  pointer-events: none;
+}
+
+.opening__mascot {
+  position: absolute;
+  bottom: 70px;
+  right: 90px;
+  width: 360px;
+  height: auto;
+  z-index: 3;
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55));
+  will-change: transform, opacity;
+}
+
+.opening__content {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 2;
   text-align: center;
   padding: 0 80px;
+  pointer-events: none;
 }
 
-.system-check__title {
+.opening__title {
   font-family: 'Cinzel', serif;
-  font-weight: 700;
-  font-size: 180px;
-  letter-spacing: 0.08em;
-  color: #D4AF37;
-  text-shadow:
-    0 0 24px rgba(212, 175, 55, 0.55),
-    0 0 60px rgba(212, 175, 55, 0.25),
-    0 6px 0 rgba(0,0,0,0.4);
-  margin-bottom: 28px;
+  font-weight: 900;
+  font-size: 156px;
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.55));
+  margin-bottom: 44px;
+  will-change: filter;
 }
 
-.system-check__subtitle {
+.opening__title-line {
+  display: block;
+  background-image: linear-gradient(180deg, #F1D77E 0%, #D4AF37 45%, #A8842B 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  will-change: transform, opacity, filter;
+}
+
+.opening__subtitle {
   font-family: 'IM Fell English', serif;
   font-style: italic;
-  font-size: 48px;
+  font-size: 54px;
   color: #F4E8C8;
-  opacity: 0.92;
-  margin-bottom: 80px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
+  will-change: transform, opacity;
 }
 
-.system-check__hint {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 28px;
-  color: #C9A961;
-  opacity: 0.75;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.opening__footer {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  text-align: center;
+  width: 720px;
+  will-change: transform, opacity;
 }
 
-.system-check__hint span {
-  display: inline-block;
-  margin: 0 18px;
+.opening__footer-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(201, 169, 97, 0.65) 50%, transparent 100%);
+  margin: 12px auto;
 }
 
-.system-check__hint kbd {
+.opening__footer-text {
   font-family: 'Cinzel', serif;
-  font-size: 22px;
-  background: rgba(201, 169, 97, 0.15);
-  border: 1px solid rgba(201, 169, 97, 0.5);
-  border-radius: 4px;
-  padding: 4px 12px;
-  margin-right: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #C9A961;
+  letter-spacing: 0.42em;
+  opacity: 0.9;
+}
+
+/* ====================================================================
+   HELP OVERLAY (operator hotkeys — fixed di luar #stage, tidak ikut scale)
+   ==================================================================== */
+
+.help-overlay {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.help-overlay.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.help-overlay__panel {
+  background: rgba(11, 24, 56, 0.92);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 6px;
+  padding: 18px 26px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.help-overlay__title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: #D4AF37;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.help-overlay__list {
+  border-collapse: collapse;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
   color: #F4E8C8;
 }
 
-/* ---------- DEBUG HUD (di luar stage, tidak ikut scale) ---------- */
+.help-overlay__list th,
+.help-overlay__list td {
+  padding: 4px 14px 4px 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.help-overlay__list th {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: #C9A961;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-right: 22px;
+}
+
+/* ====================================================================
+   DEBUG HUD (di luar stage, tidak ikut scale)
+   ==================================================================== */
 #debug-hud {
   position: fixed;
   bottom: 8px;

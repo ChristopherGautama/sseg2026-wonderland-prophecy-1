@@ -296,6 +296,16 @@ const ROUNDS = {
   },
 };
 
+/* ---------- SCENE PLAYLIST ----------
+ * Urutan render Stage View. SceneManager pakai array ini untuk next/prev.
+ * Tambah scene di sini setelah factory-nya di-attach ke window.scenes
+ * (lihat js/scenes/*.js). */
+
+const SCENES = [
+  'opening',
+  // Fase 3+: 'rules', 'r1-intro', 'r1-chart', 'r1-reveal', ...
+];
+
 /* ---------- EXPORT (global, no module system) ----------
  * Karena kita pakai vanilla <script>, semua di-attach ke window agar bisa
  * dipakai file lain. Admin Panel nanti tinggal import file ini lagi. */
@@ -308,3 +318,4 @@ window.ASSET_MANIFEST = ASSET_MANIFEST;
 window.HOUSES         = HOUSES;
 window.STOCKS         = STOCKS;
 window.ROUNDS         = ROUNDS;
+window.SCENES         = SCENES;

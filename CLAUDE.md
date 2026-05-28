@@ -21,9 +21,12 @@ sseg2026-wonderland-prophecy-1/
 ├── css/
 │   └── style.css         ← base styles + scaling layout + scene styles
 ├── js/
-│   ├── constants.js      ← palette, fonts, asset manifest, houses, stocks, rounds (dipakai ulang oleh Admin Panel)
-│   ├── audio-engine.js   ← AudioEngine class (SFX + music + fade)
-│   └── app.js            ← entry: scaling, fullscreen, keyboard, current scene
+│   ├── constants.js      ← palette, fonts, asset manifest, houses, stocks, rounds, SCENES playlist
+│   ├── audio-engine.js   ← AudioEngine class (SFX + music + fade + mute)
+│   ├── scene-manager.js  ← SceneManager class (registry + lifecycle + crossfade)
+│   ├── scenes/           ← satu file per scene, attach ke window.scenes
+│   │   └── opening.js    ← Opening cinematic (title + Wizco + Ken Burns + particles)
+│   └── app.js            ← entry: scaling, fullscreen, keyboard, scene boot
 ├── assets/
 │   ├── audio/
 │   │   ├── music/        ← m01-m09 (.mp3)
@@ -72,17 +75,55 @@ Class `AudioEngine`:
 - `playMusic(path, fadeIn=true)` — loop, fade-in 1.5s, single track at a time
 - `stopMusic(fadeOut=true)` — fade-out 1.5s
 - `duckMusic(durationMs)` — turunin sementara saat narrator/SFX besar
+- `setMuted(bool)` — mute/unmute musik, persist across scene swap
 
-Music default volume target: 0.35. Browser blokir autoplay sebelum user interaction pertama — itu sebabnya semua di-trigger dari keydown.
+Music default volume target: 0.35. Browser blokir autoplay sebelum user interaction pertama → `app.js` retry musik scene aktif pas keydown pertama (audio unlock).
+
+### `js/scene-manager.js`
+Class `SceneManager`. Stage View = playlist scene berurutan (lihat `SCENES` di constants.js). Operator (manusia) maju-mundur via keyboard.
+
+**Scene definition (deklaratif):**
+```js
+{
+  preloadAssets() { return [...image paths...] },  // optional
+  music: ASSET_MANIFEST.music.opening,             // string=play, null=stop, absent=skip
+  build(rootEl) { ...append DOM... },              // wajib
+  onEnter(ctx) { ...gsap masuk + loops... },       // optional
+  onStep(ctx, step) { return false kalau habis },  // optional (multi-step ronde)
+  onReveal(ctx) { ... },                           // optional (R key)
+  onExit(ctx) { ...cleanup tambahan... },          // optional
+}
+```
+
+**Lifecycle context (`ctx`)**: di-push ke `timelines[]` (GSAP), `intervals[]` (setInterval), `cleanups[]` (fn). SceneManager otomatis kill semua pas teardown — scene tidak perlu khawatir leak.
+
+**Crossfade**: scene lama fade-out 0.5s + SFX `sfx-16-transition` → onExit + DOM dibuang → music swap → scene baru build + fade-in 0.5s → onEnter. Next scene's `preloadAssets()` di-trigger setelah scene aktif (warm cache).
+
+**Public API**: `register(id, def)`, `loadScene(id, {withTransition})`, `advance()` (SPACE/→), `next()`, `prev()` (←), `reveal()` (R).
+
+### `js/scenes/<id>.js`
+Satu file per scene. Pattern: IIFE yang attach ke `window.scenes.<id>`. `app.js` register semuanya ke SceneManager saat boot. Tambah scene baru = bikin file + tambahkan id-nya di `SCENES` (constants.js) sesuai urutan playlist.
 
 ### `js/app.js`
-Entry. Fase 1 cuma handle:
-- Scaling stage (resize-aware)
-- Keybind: `SPACE` (test audio toggle), `F` (fullscreen)
-- HUD debug (scale + viewport)
-- Render 1 scene: System Check
+Entry. Tugasnya:
+- Stage scaling (resize-aware)
+- Audio init + preload semua SFX dari manifest
+- Boot SceneManager, register `window.scenes`, load scene pertama
+- Keyboard global (lihat hotkey table di bawah)
+- Help overlay toggle
+- Audio unlock pertama-kali (retry musik kalau autoplay diblok)
 
-Belum ada scene manager — itu Fase 2.
+## Operator hotkeys (Stage View)
+
+| Key           | Action                                             |
+|---------------|----------------------------------------------------|
+| `SPACE` / `→` | Next step dalam scene · next scene kalau habis     |
+| `←`           | Previous scene (recovery)                          |
+| `R`           | Trigger reveal (scene ronde)                       |
+| `F`           | Fullscreen toggle                                  |
+| `M`           | Mute / unmute musik                                |
+| `H`           | Toggle help overlay (daftar hotkey)                |
+| `Esc`         | Keluar fullscreen · tutup help overlay             |
 
 ## Data domain
 
@@ -106,10 +147,10 @@ QULL Quill Pharmaca, MIRR Mirror Retail, GRIN Grinhouse Energy, TARO Tarot Media
 
 ## Roadmap 9 fase
 
-- **Fase 1 — Scaffold + Stage Canvas + Audio Engine** ✅ (current)
+- **Fase 1 — Scaffold + Stage Canvas + Audio Engine** ✅
   Scaling, audio, system-check scene, constants, design system.
-- **Fase 2 — Scene framework + transitions**
-  Scene manager (router by key), opening title scene, rules scene, transition templates, fade/zoom helper di atas GSAP.
+- **Fase 2 — Scene Engine + Opening Scene** ✅ (current)
+  SceneManager (registry + lifecycle + crossfade + preload), scene file convention (`js/scenes/<id>.js`), operator hotkeys global, help overlay, audio unlock. Opening scene cinematic: Ken Burns bg, particle bintang emas, judul 2-baris stagger + glow pulse, subtitle, Wizco mascot bobbing, footer ornament, musik m01-opening + SFX sparkle.
 - **Fase 3 — Round 1: Chart Continuation**
   Mystery chart scene, 3 option frames, reveal scene, timer integration.
 - **Fase 4 — Round 2: News Impact**

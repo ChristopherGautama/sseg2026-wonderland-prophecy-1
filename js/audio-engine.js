@@ -13,6 +13,7 @@ class AudioEngine {
     this.music = null;        // Audio aktif
     this.musicTargetVolume = 0.35;
     this.sfxDefaultVolume = 0.75;
+    this.muted = false;       // persist across music swap antar scene
   }
 
   /** Preload SFX biar siap dipakai. Aman dipanggil berkali-kali. */
@@ -47,11 +48,18 @@ class AudioEngine {
     const a = new Audio(path);
     a.loop = true;
     a.volume = fadeIn ? 0 : this.musicTargetVolume;
+    a.muted = this.muted; // preserve mute state across scene transition
     this.music = a;
 
     a.play().catch(err => console.warn('[AudioEngine] Music play diblok:', err.message));
 
     if (fadeIn) this._fade(a, this.musicTargetVolume, 1500);
+  }
+
+  /** Mute/unmute musik. SFX tetap kedengaran (informatif buat operator). */
+  setMuted(muted) {
+    this.muted = !!muted;
+    if (this.music) this.music.muted = this.muted;
   }
 
   /** Stop music. fadeOut=true → fade halus 1.5s, false → langsung pause. */
