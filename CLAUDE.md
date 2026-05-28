@@ -21,11 +21,20 @@ sseg2026-wonderland-prophecy-1/
 ├── css/
 │   └── style.css         ← base styles + scaling layout + scene styles
 ├── js/
-│   ├── constants.js      ← palette, fonts, asset manifest, houses, stocks, rounds, SCENES playlist
+│   ├── constants.js      ← palette, fonts, asset manifest, houses, stocks, ROUNDS config, PLACEHOLDER_SCORES, SCENES playlist
 │   ├── audio-engine.js   ← AudioEngine class (SFX + music + fade + mute)
 │   ├── scene-manager.js  ← SceneManager class (registry + lifecycle + crossfade)
-│   ├── scenes/           ← satu file per scene, attach ke window.scenes
-│   │   └── opening.js    ← Opening cinematic (title + Wizco + Ken Burns + particles)
+│   ├── scenes/
+│   │   ├── opening.js    ← Opening cinematic (title + Wizco + Ken Burns + particles)
+│   │   ├── r1.js         ← Round 1 — register 6 sub-scene dari template
+│   │   └── templates/    ← 6 sub-scene factory (config-driven, reusable lintas ronde)
+│   │       ├── chart.js        ← SVG candlestick + fog reveal animator
+│   │       ├── transition.js   ← Trial transition (numeral + title + tagline)
+│   │       ├── brief.js        ← Scenario + chart + opsi
+│   │       ├── timer.js        ← Discussion countdown (tick + ding)
+│   │       ├── status.js       ← Submission status grid 10 house
+│   │       ├── reveal.js       ← Reveal screen + pluggable REVEAL_HANDLERS
+│   │       └── leaderboard.js  ← Ranking 10 house + sparkle top-3
 │   └── app.js            ← entry: scaling, fullscreen, keyboard, scene boot
 ├── assets/
 │   ├── audio/
@@ -104,6 +113,78 @@ Class `SceneManager`. Stage View = playlist scene berurutan (lihat `SCENES` di c
 ### `js/scenes/<id>.js`
 Satu file per scene. Pattern: IIFE yang attach ke `window.scenes.<id>`. `app.js` register semuanya ke SceneManager saat boot. Tambah scene baru = bikin file + tambahkan id-nya di `SCENES` (constants.js) sesuai urutan playlist.
 
+### `js/scenes/templates/` — 6 sub-scene reusable (Fase 3)
+Tiap ronde di-rangkai dari 6 sub-scene yang dibikin oleh **factory function** generik. Factory terima `roundCfg` (objek `ROUNDS.rX` dari constants.js) → return sceneDef sesuai kontrak SceneManager. File ronde (`js/scenes/r1.js`) tinggal panggil tiap factory dan attach hasilnya ke `window.scenes`.
+
+| File          | Factory                       | Bg                              | Musik             |
+|---------------|-------------------------------|---------------------------------|-------------------|
+| transition.js | `createTransitionScene(cfg)`  | `b0-04-trial-transition`        | (tidak diubah)    |
+| brief.js      | `createBriefScene(cfg)`       | `cfg.brief.bg` (per ronde)      | `m02-briefing`    |
+| timer.js      | `createTimerScene(cfg)`       | `b0-05-discussion-timer`        | `m03-timer`       |
+| status.js     | `createStatusScene(cfg)`      | `b0-07-submission-status`       | (tidak diubah)    |
+| reveal.js     | `createRevealScene(cfg)`      | `cfg.brief.bg`                  | (tidak diubah)    |
+| leaderboard.js| `createLeaderboardScene(cfg)` | `b0-08-leaderboard`             | `m05-leaderboard` |
+
+**Chart helper** (`templates/chart.js`) ekspos `window.ChartHelper` dengan:
+- `buildCandlestickSVG({...})` — render SVG candlestick + volume bar dari data OHLC. Reserve slot untuk extension supaya spacing brief & reveal konsisten.
+- `appendExtensionCandles(api, data)` — tambah candle ke slot setelah candle utama (dipakai reveal).
+- `animateFogReveal({api, onMidpoint, onComplete, audio})` — kabut emas masuk → tersibak dari tengah → onComplete dipanggil.
+- `drawTargetLine`, `highlightLastExtensionCandle` — helper kecil untuk handler reveal.
+
+### Skema round config (`ROUNDS.rX` di constants.js)
+Single source of truth untuk konten ronde. Tiap template baca dari objek ini, jadi nambah ronde dengan format yang sudah didukung **= cukup tambah objek config**, tidak ada kode baru.
+
+```js
+{
+  id: 'r1',
+  trialNumeral: 'I',                    // angka romawi untuk transition
+  trialLabel:   'TRIAL THE FIRST',
+  title:        'Chart Continuation',
+  tagline:      'Read the candles before the mist returns.',
+  format:       'single-pick',          // routing layout brief (extensible)
+  multiplier:   1.0,
+  wager:        { min: 10, max: 50 },
+  durations:    { brief: 90, discuss: 150 },   // detik
+
+  brief: {
+    bg: 'assets/img/round1/b1-01-mystery-chart-bg.png',
+    stock: { ticker, name, cap },
+    scenario: '...',
+    chart: { yMin, yMax, current, ohlc: [{o,h,l,c,v}, ...] }
+  },
+
+  options: [
+    { key: 'A', label, target, hint }, ...
+  ],
+  correctKey: 'B',
+
+  reveal: {
+    type: 'chart-fog',                  // routing → REVEAL_HANDLERS[type]
+    extension: [{o,h,l,c,v}, ...]       // payload spesifik handler
+  }
+}
+```
+
+### Pluggable reveal handlers
+`createRevealScene` baca `cfg.reveal.type`, panggil `window.REVEAL_HANDLERS[type]`. Handler bertanggung jawab atas animasi reveal + highlight opsi. Nambah ronde dengan reveal beda → cukup tambah entry baru ke registry tanpa nyentuh template:
+
+```js
+window.REVEAL_HANDLERS['my-new-type'] = function(ctx, cfg, api) {
+  // api = { chartApi, optionEls, root }
+  // jalankan animasi, push tween/interval ke ctx.timelines / ctx.intervals
+  // highlight optionEls dengan class .is-correct / .is-wrong
+};
+```
+
+Fase 3 implementasi handler `chart-fog` (kabut emas tersibak + extension candle naik).
+
+### Cara nambah ronde baru
+1. Lengkapi `ROUNDS.rN` di `constants.js` mengikuti skema di atas.
+2. (Kalau format brief/reveal-nya belum ada) tambah path render di template terkait + tambah handler di `REVEAL_HANDLERS`.
+3. Bikin `js/scenes/rN.js` — tinggal panggil 6 factory dengan `ROUNDS.rN`.
+4. Tambah 6 ID sub-scene di array `SCENES` (constants.js) di posisi yang benar.
+5. Tambah `<script src="js/scenes/rN.js">` di `stage.html` sebelum `app.js`.
+
 ### `js/app.js`
 Entry. Tugasnya:
 - Stage scaling (resize-aware)
@@ -149,10 +230,10 @@ QULL Quill Pharmaca, MIRR Mirror Retail, GRIN Grinhouse Energy, TARO Tarot Media
 
 - **Fase 1 — Scaffold + Stage Canvas + Audio Engine** ✅
   Scaling, audio, system-check scene, constants, design system.
-- **Fase 2 — Scene Engine + Opening Scene** ✅ (current)
+- **Fase 2 — Scene Engine + Opening Scene** ✅
   SceneManager (registry + lifecycle + crossfade + preload), scene file convention (`js/scenes/<id>.js`), operator hotkeys global, help overlay, audio unlock. Opening scene cinematic: Ken Burns bg, particle bintang emas, judul 2-baris stagger + glow pulse, subtitle, Wizco mascot bobbing, footer ornament, musik m01-opening + SFX sparkle.
-- **Fase 3 — Round 1: Chart Continuation**
-  Mystery chart scene, 3 option frames, reveal scene, timer integration.
+- **Fase 3 — Sub-Scene Template + Round 1: Chart Continuation** ✅ (current)
+  6 factory template config-driven (transition/brief/timer/status/reveal/leaderboard) + ChartHelper SVG candlestick + fog reveal animator + pluggable `REVEAL_HANDLERS` registry. R1 dirangkai dari template dengan config di `ROUNDS.r1`. Reveal handler `chart-fog`: kabut emas tersibak dari tengah → extension candle naik ke 460 → opsi B highlight emas, A/C gray-out. Placeholder scores untuk leaderboard (TODO ganti via Admin Panel di Fase 8).
 - **Fase 4 — Round 2: News Impact**
   Lyndell's Journal scene, sector cards, reveal impact bar.
 - **Fase 5 — Round 3: Sector Race**

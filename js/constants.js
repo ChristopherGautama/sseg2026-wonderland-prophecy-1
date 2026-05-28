@@ -209,91 +209,150 @@ const STOCKS = [
   { ticker: 'RBBT', name: 'Rabbit Hole Mining',   sector: 'Tambang'    },
 ];
 
-/* ---------- ROUNDS (metadata + placeholder content) ----------
- * Konten scenario/jawaban diisi di fase berikut. Struktur sengaja dibikin
- * konsisten supaya Admin Panel bisa loop dengan loop yg sama. */
+/* ---------- ROUNDS (config-driven, schema seragam) ----------
+ * Struktur umum tiap ronde:
+ *   {
+ *     id, trialNumeral, trialLabel, title, tagline,
+ *     format,         // 'single-pick' | 'choose-sector' | 'sector-race' |
+ *                     // 'portfolio-allocation' | 'shield-survival' |
+ *                     // 'choose-catalyst-winner' | 'ipo-battle' |
+ *                     // 'reversal-or-skip'
+ *     multiplier,
+ *     wager:     { min, max },
+ *     durations: { brief, discuss },   // detik
+ *     brief:   { bg, scenario, chart?, ... }    // konten brief screen
+ *     options: [ { key, label, target, hint? } ]
+ *     correctKey,
+ *     reveal:  { type, ... }            // type dipakai reveal template
+ *                                       // untuk routing ke handler
+ *   }
+ *
+ * Fase 3 isi LENGKAP cuma R1. R2–Bonus baru placeholder minimal
+ * (id, trialNumeral, trialLabel, title, tagline, multiplier).
+ * Detail diisi di fase masing-masing. */
 
 const ROUNDS = {
   r1: {
     id: 'r1',
-    title: 'Chart Continuation',
-    tagline: 'Read the candle. Predict the next move.',
-    format: 'choose-from-3',
-    wagerMin: 10,
-    wagerMax: 50,
-    multiplier: 1.0,
-    scenarios: [], // TODO Fase 3
+    trialNumeral: 'I',
+    trialLabel:   'TRIAL THE FIRST',
+    title:        'Chart Continuation',
+    tagline:      'Read the candles before the mist returns.',
+    format:       'single-pick',
+    multiplier:   1.0,
+    wager:        { min: 10, max: 50 },
+    durations:    { brief: 90, discuss: 150 },
+
+    brief: {
+      bg: 'assets/img/round1/b1-01-mystery-chart-bg.png',
+      stock: { ticker: 'SPYR', name: 'Spire Tech', cap: '850M Wizco' },
+      scenario:
+        'SPYR membentuk dua titik rendah di 380, dengan recovery ke 420 ' +
+        'di antara keduanya. Volume meningkat di sesi terakhir. CEO baru ' +
+        'saja mengumumkan kontrak besar dengan Bank of Lyndell. ' +
+        'Ke mana SPYR bergerak 7 hari ke depan?',
+      // 30 hari OHLC membentuk pola Double Bottom.
+      // Tiap entry: { o (open), h (high), l (low), c (close), v (volume) }
+      // Day 1-5  : decline 420 → 380 (low #1)
+      // Day 6-12 : recovery 380 → 420 (middle peak)
+      // Day 13-17: decline 420 → 380 (low #2)
+      // Day 18-30: recovery 380 → 390 (current, volume naik di akhir)
+      chart: {
+        yMin: 350,
+        yMax: 470,
+        current: 390,
+        ohlc: [
+          // Day 1-5: decline ke low #1 (~380)
+          { o: 420, h: 422, l: 412, c: 414, v: 32 },
+          { o: 414, h: 416, l: 405, c: 407, v: 38 },
+          { o: 407, h: 410, l: 396, c: 398, v: 42 },
+          { o: 398, h: 401, l: 385, c: 388, v: 48 },
+          { o: 388, h: 390, l: 379, c: 381, v: 55 }, // low #1
+          // Day 6-12: recovery ke ~420
+          { o: 381, h: 392, l: 380, c: 390, v: 46 },
+          { o: 390, h: 400, l: 388, c: 398, v: 42 },
+          { o: 398, h: 408, l: 396, c: 406, v: 40 },
+          { o: 406, h: 415, l: 404, c: 413, v: 38 },
+          { o: 413, h: 420, l: 411, c: 418, v: 36 },
+          { o: 418, h: 422, l: 414, c: 420, v: 34 },
+          { o: 420, h: 421, l: 412, c: 414, v: 32 },
+          // Day 13-17: decline ke low #2 (~380)
+          { o: 414, h: 416, l: 405, c: 407, v: 36 },
+          { o: 407, h: 409, l: 397, c: 399, v: 40 },
+          { o: 399, h: 401, l: 387, c: 389, v: 44 },
+          { o: 389, h: 391, l: 380, c: 382, v: 50 },
+          { o: 382, h: 384, l: 378, c: 380, v: 58 }, // low #2
+          // Day 18-25: recovery awal
+          { o: 380, h: 388, l: 379, c: 386, v: 52 },
+          { o: 386, h: 390, l: 384, c: 388, v: 48 },
+          { o: 388, h: 392, l: 386, c: 390, v: 46 },
+          { o: 390, h: 393, l: 387, c: 389, v: 44 },
+          { o: 389, h: 392, l: 385, c: 387, v: 46 },
+          { o: 387, h: 391, l: 385, c: 389, v: 50 },
+          { o: 389, h: 393, l: 387, c: 391, v: 55 },
+          // Day 26-30: konsolidasi ~390, volume naik (anticipation)
+          { o: 391, h: 394, l: 388, c: 390, v: 62 },
+          { o: 390, h: 393, l: 387, c: 389, v: 70 },
+          { o: 389, h: 392, l: 386, c: 388, v: 78 },
+          { o: 388, h: 392, l: 386, c: 390, v: 88 },
+          { o: 390, h: 393, l: 388, c: 391, v: 96 },
+          { o: 391, h: 394, l: 388, c: 390, v: 108 }, // current
+        ],
+      },
+    },
+
+    options: [
+      { key: 'A', label: 'Continuation Down', target: 350,
+        hint: 'Trend turun berlanjut, tembus support 380.' },
+      { key: 'B', label: 'Double Bottom',     target: 460,
+        hint: 'Pola pembalikan bullish — naik ke resistance 460.' },
+      { key: 'C', label: 'Sideways',          target: 400,
+        hint: 'Konsolidasi datar di kisaran 400.' },
+    ],
+    correctKey: 'B',
+
+    reveal: {
+      type: 'chart-fog',
+      // 7 hari extension (after current) — candle naik dari 390 ke 460
+      extension: [
+        { o: 391, h: 402, l: 390, c: 400, v: 120 },
+        { o: 400, h: 414, l: 399, c: 412, v: 132 },
+        { o: 412, h: 426, l: 411, c: 424, v: 140 },
+        { o: 424, h: 438, l: 422, c: 436, v: 148 },
+        { o: 436, h: 448, l: 434, c: 446, v: 154 },
+        { o: 446, h: 456, l: 444, c: 454, v: 158 },
+        { o: 454, h: 462, l: 452, c: 460, v: 162 }, // target B
+      ],
+    },
   },
-  r2: {
-    id: 'r2',
-    title: 'News Impact',
-    tagline: "Lyndell's Journal whispers — which sector burns?",
-    format: 'choose-sector',
-    wagerMin: 20,
-    wagerMax: 100,
-    multiplier: 1.0,
-    scenarios: [], // TODO Fase 4
-  },
-  r3: {
-    id: 'r3',
-    title: 'Sector Race',
-    tagline: 'Four runners. One finish line. Pick the swiftest.',
-    format: 'sector-race',
-    wagerMin: 20,
-    wagerMax: 100,
-    multiplier: 1.2,
-    scenarios: [], // TODO Fase 5
-  },
-  r4: {
-    id: 'r4',
-    title: "The Oracle's Portfolio",
-    tagline: 'Allocate 100 chips across the eight prophecies.',
-    format: 'portfolio-allocation',
-    wagerMin: 100,
-    wagerMax: 100, // forced
-    multiplier: 1.5,
-    scenarios: [], // TODO Fase 6
-  },
-  r5: {
-    id: 'r5',
-    title: 'Black Swan Survival',
-    tagline: 'The storm comes. Will your shield hold?',
-    format: 'shield-survival',
-    wagerMin: 30,
-    wagerMax: 150,
-    multiplier: 1.5,
-    scenarios: [], // TODO Fase 7
-  },
-  r6: {
-    id: 'r6',
-    title: 'The Catalyst Trial',
-    tagline: 'Which catalyst ignites the next bull?',
-    format: 'choose-catalyst-winner',
-    wagerMin: 30,
-    wagerMax: 150,
-    multiplier: 1.8,
-    scenarios: [], // TODO Fase 7
-  },
-  r7: {
-    id: 'r7',
-    title: 'Wonderland IPO Battle',
-    tagline: 'The bell rings. Four tickers debut. Bet on the survivor.',
-    format: 'ipo-battle',
-    wagerMin: 100,
-    wagerMax: 100, // forced
-    multiplier: 2.5,
-    scenarios: [], // TODO Fase 8
-  },
-  bonus: {
-    id: 'bonus',
-    title: 'The Reversals',
-    tagline: 'Timeline cracks. Read the telegram — or skip the storm.',
-    format: 'reversal-or-skip',
-    wagerMin: 50,
-    wagerMax: 200,
-    multiplier: 2.5,
-    scenarios: [], // TODO Fase 8
-  },
+
+  r2:    { id: 'r2',    trialNumeral: 'II',   trialLabel: 'TRIAL THE SECOND',  title: 'News Impact',           tagline: "Lyndell's Journal whispers — which sector burns?",      multiplier: 1.0 },
+  r3:    { id: 'r3',    trialNumeral: 'III',  trialLabel: 'TRIAL THE THIRD',   title: 'Sector Race',           tagline: 'Four runners. One finish line. Pick the swiftest.',     multiplier: 1.2 },
+  r4:    { id: 'r4',    trialNumeral: 'IV',   trialLabel: 'TRIAL THE FOURTH',  title: "The Oracle's Portfolio", tagline: 'Allocate 100 chips across the eight prophecies.',       multiplier: 1.5 },
+  r5:    { id: 'r5',    trialNumeral: 'V',    trialLabel: 'TRIAL THE FIFTH',   title: 'Black Swan Survival',   tagline: 'The storm comes. Will your shield hold?',                multiplier: 1.5 },
+  r6:    { id: 'r6',    trialNumeral: 'VI',   trialLabel: 'TRIAL THE SIXTH',   title: 'The Catalyst Trial',    tagline: 'Which catalyst ignites the next bull?',                  multiplier: 1.8 },
+  r7:    { id: 'r7',    trialNumeral: 'VII',  trialLabel: 'TRIAL THE SEVENTH', title: 'Wonderland IPO Battle', tagline: 'The bell rings. Four tickers debut. Bet on the survivor.', multiplier: 2.5 },
+  bonus: { id: 'bonus', trialNumeral: '✦',    trialLabel: 'BONUS · THE REVERSALS', title: 'The Reversals',     tagline: 'Timeline cracks. Read the telegram — or skip the storm.', multiplier: 2.5 },
+};
+
+/* ---------- PLACEHOLDER SCORES (Fase 3 only) ----------
+ * Skor asli akan datang dari Admin Panel via JSON paste di Fase 8/9.
+ * Untuk sekarang, leaderboard pakai data ini supaya bisa di-test.
+ * TODO Fase 8: hapus konstanta ini setelah Admin Panel siap. */
+
+const PLACEHOLDER_SCORES = {
+  r1: [
+    { houseId: 'VI',   score: 165 },
+    { houseId: 'V',    score: 150 },
+    { houseId: 'IX',   score: 140 },
+    { houseId: 'II',   score: 125 },
+    { houseId: 'VII',  score: 110 },
+    { houseId: 'III',  score:  95 },
+    { houseId: 'I',    score:  80 },
+    { houseId: 'VIII', score:  65 },
+    { houseId: 'IV',   score:  50 },
+    { houseId: 'X',    score:  35 },
+  ],
 };
 
 /* ---------- SCENE PLAYLIST ----------
@@ -303,7 +362,14 @@ const ROUNDS = {
 
 const SCENES = [
   'opening',
-  // Fase 3+: 'rules', 'r1-intro', 'r1-chart', 'r1-reveal', ...
+  // Ronde 1 — 6 sub-scene template-based
+  'r1-transition',
+  'r1-brief',
+  'r1-timer',
+  'r1-status',
+  'r1-reveal',
+  'r1-leaderboard',
+  // Fase 4+: 'r2-transition', 'r2-brief', ... dst (pattern sama)
 ];
 
 /* ---------- EXPORT (global, no module system) ----------
@@ -317,5 +383,6 @@ window.DESIGN_HEIGHT  = DESIGN_HEIGHT;
 window.ASSET_MANIFEST = ASSET_MANIFEST;
 window.HOUSES         = HOUSES;
 window.STOCKS         = STOCKS;
-window.ROUNDS         = ROUNDS;
-window.SCENES         = SCENES;
+window.ROUNDS             = ROUNDS;
+window.SCENES             = SCENES;
+window.PLACEHOLDER_SCORES = PLACEHOLDER_SCORES;
