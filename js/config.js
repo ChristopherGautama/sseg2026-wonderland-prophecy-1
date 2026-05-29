@@ -95,6 +95,57 @@ const SCREENS = [
     winner: "assets/img/cards/universe/spyr-asset-card.png",
     wizco: "assets/img/wizco/wizco-celebrate.png",
     wizcoPos: "bottom-left"
+  },
+
+  // --- RONDE 4 — Asset Allocation (Rate Cut). 5 kartu, reveal pakai gambar jadi ---
+  // Engine auto-fit: 5 kartu × ~288px lebar + 4 gap × 40px = 1600px (pas).
+  { id: "t-r4", type: "transition", img: "assets/img/transition/transition-r4.png" },
+  {
+    id: "r4",
+    type: "scene",
+    img: "assets/img/scene/scene-r4.png",
+    timer: 90,
+    cards: [
+      "assets/img/cards/universe/spyr-asset-card.png",
+      "assets/img/cards/universe/noct-asset-card.png",
+      "assets/img/cards/universe/qull-asset-card.png",
+      "assets/img/cards/universe/mirr-asset-card.png",
+      "assets/img/cards/universe/grin-asset-card.png"
+    ]
+  },
+  {
+    id: "r4-reveal",
+    type: "reveal",
+    img: "assets/img/reveal/reveal-r4.png",
+    wizco: "assets/img/wizco/wizco-scroll.png",
+    wizcoPos: "bottom-left"
+  },
+
+  // --- RONDE 5 — Black Swan Survival. 6 kartu defensif (RAVEN & BLAZE = TRAP) ---
+  // CATATAN: trio pemenang masih PENDING dari Cece. Reveal pakai banner reveal-r5.png
+  //         (bukan per-kartu) — handler reveal di engine tinggal tampilkan PNG jadi.
+  // Engine auto-fit: 6 kartu × ~233px lebar + 5 gap × 40px = 1598px (pas, margin tipis).
+  { id: "t-r5", type: "transition", img: "assets/img/transition/transition-r5.png" },
+  {
+    id: "r5",
+    type: "scene",
+    img: "assets/img/scene/scene-r5.png",
+    timer: 90,
+    cards: [
+      "assets/img/cards/defensive/aegis-defensive-card.png",
+      "assets/img/cards/defensive/gleam-defensive-card.png",
+      "assets/img/cards/defensive/hearth-defensive-card.png",
+      "assets/img/cards/defensive/wick-defensive-card.png",
+      "assets/img/cards/defensive/raven-defensive-card.png",
+      "assets/img/cards/defensive/blaze-defensive-card.png"
+    ]
+  },
+  {
+    id: "r5-reveal",
+    type: "reveal",
+    img: "assets/img/reveal/reveal-r5.png",
+    wizco: "assets/img/wizco/wizco-triumphant.png",
+    wizcoPos: "bottom-left"
   }
 ];
 
