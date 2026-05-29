@@ -6,11 +6,14 @@
 
    Field per layar:
    - id          : string unik (untuk debugging/log)
-   - type        : "transition" | "scene" | "reveal"
+   - type        : "transition" | "scene" | "reveal" | "card-reveal"
    - img         : path gambar utama (object-fit: contain — tidak akan ke-crop)
+                   untuk "card-reveal" ini dipakai sebagai background scene (di-dim)
    - timer       : (scene saja) durasi awal dalam detik. Default 90.
    - cards       : (scene saja) array path PNG kartu pilihan
                    ditata horizontal di area bawah-tengah, auto-fit
+   - winner      : (card-reveal saja) path PNG kartu pemenang
+                   yang akan di-zoom ke tengah + diberi glow + stempel CONFIRMED
    - wizco       : (opsional) path PNG Wizco yang ditempel di sudut
    - wizcoPos    : (opsional) "bottom-left" (default) | "bottom-right"
                                 | "top-left" | "top-right"
@@ -44,6 +47,52 @@ const SCREENS = [
     id: "r1-reveal",
     type: "reveal",
     img: "assets/img/reveal/reveal-r1.png",
+    wizco: "assets/img/wizco/wizco-celebrate.png",
+    wizcoPos: "bottom-left"
+  },
+
+  // --- RONDE 2 — News Impact (Rate Hike). Jawaban benar: NOCT ---
+  { id: "t-r2", type: "transition", img: "assets/img/transition/transition-r2.png" },
+  {
+    id: "r2",
+    type: "scene",
+    img: "assets/img/scene/scene-r2.png",
+    timer: 90,
+    cards: [
+      "assets/img/cards/universe/noct-asset-card.png",
+      "assets/img/cards/universe/spyr-asset-card.png",
+      "assets/img/cards/universe/mirr-asset-card.png",
+      "assets/img/cards/universe/grin-asset-card.png"
+    ]
+  },
+  {
+    id: "r2-reveal",
+    type: "card-reveal",
+    img: "assets/img/scene/scene-r2.png",
+    winner: "assets/img/cards/universe/noct-asset-card.png",
+    wizco: "assets/img/wizco/wizco-pointing-right.png",
+    wizcoPos: "bottom-left"
+  },
+
+  // --- RONDE 3 — Sector Race (Goldilocks). Jawaban benar: SPYR ---
+  { id: "t-r3", type: "transition", img: "assets/img/transition/transition-r3.png" },
+  {
+    id: "r3",
+    type: "scene",
+    img: "assets/img/scene/scene-r3.png",
+    timer: 90,
+    cards: [
+      "assets/img/cards/universe/spyr-asset-card.png",
+      "assets/img/cards/universe/grin-asset-card.png",
+      "assets/img/cards/universe/noct-asset-card.png",
+      "assets/img/cards/universe/mirr-asset-card.png"
+    ]
+  },
+  {
+    id: "r3-reveal",
+    type: "card-reveal",
+    img: "assets/img/scene/scene-r3.png",
+    winner: "assets/img/cards/universe/spyr-asset-card.png",
     wizco: "assets/img/wizco/wizco-celebrate.png",
     wizcoPos: "bottom-left"
   }

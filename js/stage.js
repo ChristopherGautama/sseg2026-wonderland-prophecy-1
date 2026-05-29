@@ -21,6 +21,12 @@
   const DESIGN_W = 1920;
   const DESIGN_H = 1080;
 
+  // ---------- Asset shared yang dipakai oleh layar tipe "card-reveal" ----------
+  // Letakkan di-engine (bukan di config) supaya config tetap simpel —
+  // operator nggak perlu tahu file pendukung internal.
+  const SHARED_GLOW  = 'assets/img/shared/glow-gold.png';
+  const SHARED_STAMP = 'assets/img/shared/stamp-confirmed.png';
+
   // ---------- Referensi DOM utama ----------
   const stageEl = document.getElementById('stage');
   const stageWrapEl = document.getElementById('stage-wrap');
@@ -49,11 +55,19 @@
   // =========================================================
   function collectImagePaths() {
     const paths = new Set();
+    let hasCardReveal = false;
     window.SCREENS.forEach(function (s) {
       if (s.img) paths.add(s.img);
       if (s.wizco) paths.add(s.wizco);
       if (Array.isArray(s.cards)) s.cards.forEach(function (c) { paths.add(c); });
+      if (s.winner) paths.add(s.winner);
+      if (s.type === 'card-reveal') hasCardReveal = true;
     });
+    // Glow + stempel cuma dipakai layar card-reveal — preload hanya kalau ada
+    if (hasCardReveal) {
+      paths.add(SHARED_GLOW);
+      paths.add(SHARED_STAMP);
+    }
     return Array.from(paths);
   }
 
@@ -356,10 +370,136 @@
     return root;
   }
 
+  // ---------- card-reveal ----------
+  // Tipe layar baru yang TIDAK pakai gambar reveal jadi. Ia mengambil
+  // background scene ronde (data.img) lalu di-dim, kemudian me-zoom
+  // kartu pemenang (data.winner) ke tengah dengan glow + stempel CONFIRMED.
+  //
+  // Komposisi DOM:
+  //   .screen.screen-card-reveal
+  //     .screen-image                    ← background scene (object-fit:contain)
+  //     .card-reveal-dim                 ← layer hitam 45% opacity
+  //     .card-reveal-wrap                ← kontainer kartu, di-center kanvas
+  //       .card-reveal-glow              ← PNG glow di belakang kartu (pulse loop)
+  //       .card-reveal-card              ← PNG kartu pemenang (zoom-in)
+  //       .card-reveal-stamp             ← PNG stempel CONFIRMED (slam)
+  //     .wizco (opsional)
+  //
+  // Animasi GSAP di-bungkus gsap.context() yang disimpan di root.__gsapCtx.
+  // Saat layar di-swap, screenManager.show() akan kill context tsb → semua
+  // tween (termasuk loop pulse) berhenti seketika.
+  function renderCardReveal(data) {
+    const root = document.createElement('div');
+    root.className = 'screen screen-card-reveal';
+
+    // 1. Background scene (gambar scene ronde, contain-fit)
+    root.appendChild(buildScreenImage(data.img));
+
+    // 2. Layer dim 45% — biar kartu menonjol di atas latar
+    const dim = document.createElement('div');
+    dim.className = 'card-reveal-dim';
+    root.appendChild(dim);
+
+    // 3. Wrapper kartu (centered absolute di kanvas)
+    const wrap = document.createElement('div');
+    wrap.className = 'card-reveal-wrap';
+
+    // 3a. Glow di belakang (z-index lebih kecil dari kartu via CSS)
+    let glowEl = null;
+    if (imageStatus[SHARED_GLOW] !== 'failed') {
+      glowEl = document.createElement('img');
+      glowEl.className = 'card-reveal-glow';
+      glowEl.src = SHARED_GLOW;
+      glowEl.alt = '';
+      wrap.appendChild(glowEl);
+    }
+
+    // 3b. Kartu pemenang
+    let cardEl = null;
+    if (data.winner && imageStatus[data.winner] !== 'failed') {
+      cardEl = document.createElement('img');
+      cardEl.className = 'card-reveal-card';
+      cardEl.src = data.winner;
+      cardEl.alt = '';
+      wrap.appendChild(cardEl);
+    } else {
+      // Fallback placeholder kalau winner missing — tetap punya size untuk anchor stamp
+      const ph = document.createElement('div');
+      ph.className = 'card-reveal-card placeholder-card';
+      ph.textContent = '[winner missing]\n' + (data.winner || '');
+      wrap.appendChild(ph);
+      cardEl = ph;
+    }
+
+    // 3c. Stempel CONFIRMED — anchor ke pojok kanan-atas kartu (overlap keluar)
+    let stampEl = null;
+    if (imageStatus[SHARED_STAMP] !== 'failed') {
+      stampEl = document.createElement('img');
+      stampEl.className = 'card-reveal-stamp';
+      stampEl.src = SHARED_STAMP;
+      stampEl.alt = '';
+      wrap.appendChild(stampEl);
+    }
+
+    root.appendChild(wrap);
+
+    // 4. Wizco opsional
+    const w = buildWizco(data.wizco, data.wizcoPos);
+    if (w) root.appendChild(w);
+
+    // 5. Animasi (semua di dalam gsap.context supaya auto-killable)
+    if (window.gsap) {
+      const ctx = gsap.context(function () {
+        // 5a. Kartu: scale 0.4 → 1, fade-in, easing back.out untuk efek "muncul mantap"
+        if (cardEl) {
+          gsap.fromTo(cardEl,
+            { opacity: 0, scale: 0.4 },
+            { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(1.4)' }
+          );
+        }
+
+        // 5b. Glow: fade-in setelah kartu landed, lalu pulse halus tak terbatas
+        if (glowEl) {
+          gsap.fromTo(glowEl,
+            { opacity: 0, scale: 0.85 },
+            {
+              opacity: 0.8, scale: 1, duration: 0.5, delay: 0.7, ease: 'power2.out',
+              onComplete: function () {
+                // Pulse loop — yoyo + repeat -1, di-kill bersama context saat layar swap
+                gsap.to(glowEl, {
+                  opacity: 0.55, scale: 1.06,
+                  duration: 1.2, repeat: -1, yoyo: true, ease: 'sine.inOut'
+                });
+              }
+            }
+          );
+        }
+
+        // 5c. Stempel: slam — mulai besar + miring tajam, settle ke skala 1 + sedikit miring.
+        //     xPercent/yPercent dipakai untuk "anchor overlap" pojok kanan-atas kartu
+        //     (40% keluar ke kanan, 40% keluar ke atas). Karena CSS tidak punya transform,
+        //     GSAP bisa composite anchor + scale + rotate dalam satu transform string.
+        if (stampEl) {
+          gsap.fromTo(stampEl,
+            { opacity: 0, scale: 1.8, rotate: -25, xPercent: 40, yPercent: -40 },
+            { opacity: 1, scale: 1, rotate: -12, xPercent: 40, yPercent: -40,
+              duration: 0.4, delay: 1.0, ease: 'back.out(2)' }
+          );
+        }
+      }, root);
+
+      // Simpan agar screenManager bisa kill saat layar berganti
+      root.__gsapCtx = ctx;
+    }
+
+    return root;
+  }
+
   function renderByType(data) {
-    if (data.type === 'transition') return renderTransition(data);
-    if (data.type === 'scene')      return renderScene(data);
-    if (data.type === 'reveal')     return renderReveal(data);
+    if (data.type === 'transition')  return renderTransition(data);
+    if (data.type === 'scene')       return renderScene(data);
+    if (data.type === 'reveal')      return renderReveal(data);
+    if (data.type === 'card-reveal') return renderCardReveal(data);
     // fallback kalau type aneh — anggap transition
     return renderTransition(data);
   }
@@ -400,6 +540,12 @@
 
       stageEl.appendChild(nextEl);
 
+      // Kill semua tween/loop milik layar lama SEBELUM fade-out
+      // (mis. pulse glow di card-reveal — jangan biarkan keep running saat fade).
+      if (oldEl && oldEl.__gsapCtx) {
+        try { oldEl.__gsapCtx.kill(); } catch (e) { /* defensif */ }
+      }
+
       // Animasi keluar untuk layar lama
       if (oldEl && window.gsap) {
         gsap.to(oldEl, {
@@ -420,8 +566,8 @@
         );
       }
 
-      // SFX reveal saat masuk layar reveal
-      if (data.type === 'reveal') {
+      // SFX reveal saat masuk layar reveal (baik image-reveal lama maupun card-reveal)
+      if (data.type === 'reveal' || data.type === 'card-reveal') {
         audio.playSfx('reveal');
       }
     }

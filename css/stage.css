@@ -198,3 +198,80 @@ html, body {
   text-align: center;
   word-break: break-all;
 }
+
+/* =========================================================
+   CARD-REVEAL — tipe layar baru (Fase B)
+
+   Layout target:
+   - Background = .screen-image (gambar scene ronde, contain)
+   - .card-reveal-dim → overlay hitam 45% di atas bg
+   - .card-reveal-wrap → kontainer kartu, fixed height 756px (≈70% dari 1080)
+     di-center kanvas via absolute + translate(-50%,-50%).
+     Child .card-reveal-card pakai height:100% + width:auto → wrap inline-block
+     menyesuaikan width-nya (jaga aspect-ratio kartu, tidak gepeng).
+   - .card-reveal-glow → di belakang kartu (z-index lebih kecil),
+     scale 130% via height/width, mix-blend-mode screen agar glow nyatu.
+   - .card-reveal-stamp → di pojok kanan-atas kartu, sebagian OVERLAP keluar
+     batas kartu via translate(40%, -40%). Final rotasi -12° (set GSAP).
+   ========================================================= */
+.screen-card-reveal {
+  /* tidak ada style khusus di sini — anak-anaknya yang punya layout */
+}
+
+.card-reveal-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2;            /* di atas .screen-image (z auto), di bawah wrap */
+  pointer-events: none;
+}
+
+.card-reveal-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: 756px;         /* ≈ 70% dari 1080 */
+  display: inline-block; /* width menyesuaikan child .card-reveal-card */
+  z-index: 3;
+  /* GSAP akan animate scale .card-reveal-card; wrap itself diam */
+}
+
+.card-reveal-card {
+  display: block;
+  position: relative;    /* anchor untuk stamp absolute */
+  height: 100%;
+  width: auto;           /* lebar mengikuti natural ratio PNG kartu */
+  z-index: 2;            /* di atas glow, di bawah stamp */
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
+  transform-origin: center center;
+}
+
+.card-reveal-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 140%;          /* lebih besar dari kartu */
+  width: auto;           /* natural ratio (PNG glow biasanya square/circular) */
+  transform: translate(-50%, -50%);
+  z-index: 1;            /* di belakang kartu */
+  opacity: 0;            /* GSAP fade-in */
+  pointer-events: none;
+  mix-blend-mode: screen;/* glow nyatu dengan background */
+}
+
+.card-reveal-stamp {
+  position: absolute;
+  top: 0;
+  right: 0;
+  /* CATATAN: TIDAK set transform di CSS — GSAP yang handle anchor (xPercent/yPercent)
+     sekaligus animate scale/rotate dalam satu transform string. Kalau CSS punya
+     transform sendiri di sini, GSAP akan menimpanya saat .set/.fromTo dipanggil. */
+  height: 320px;         /* relatif terhadap kartu yang 756px tingginya */
+  width: auto;
+  z-index: 4;            /* paling depan */
+  opacity: 0;            /* GSAP slam-in */
+  pointer-events: none;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55));
+  transform-origin: center center;
+}
