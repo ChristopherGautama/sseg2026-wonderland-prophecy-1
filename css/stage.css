@@ -1,0 +1,200 @@
+/* =========================================================
+   Wonderland Prophecy — Stage View
+   Image-driven slideshow. SATU file CSS untuk semua styling.
+
+   Strategi layout:
+   - #stage adalah kanvas logis 1920x1080
+   - JS yang mengatur scale (transform) supaya pas di layar LED
+   - Semua elemen di dalam #stage memakai koordinat 1920x1080
+   ========================================================= */
+
+/* ---------- Reset ringan + body hitam (jadi letterbox) ---------- */
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: #000;            /* hitam = warna letterbox di sisa viewport */
+  overflow: hidden;             /* tidak boleh ada scrollbar di LED */
+  font-family: 'Cinzel', 'Times New Roman', serif;
+  color: #F4E8C8;
+  user-select: none;            /* operator tidak sengaja highlight teks */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Stage wrap = full viewport, center kontainer kanvas ---------- */
+#stage-wrap {
+  position: fixed;
+  inset: 0;                     /* top/right/bottom/left = 0 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+/* ---------- Kanvas logis 1920x1080 ---------- */
+#stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  background: #000;             /* background dasar kalau gambar belum loaded */
+  overflow: hidden;
+  transform-origin: center center;  /* JS akan set transform: scale(...) */
+}
+
+/* ---------- Container per "screen" (overlap penuh kanvas) ---------- */
+.screen {
+  position: absolute;
+  inset: 0;                     /* fill 1920x1080 */
+  width: 100%;
+  height: 100%;
+}
+
+/* Gambar fullscreen — object-fit: contain supaya teks dalam gambar TIDAK ke-crop */
+.screen-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+}
+
+/* ---------- Loading screen awal ---------- */
+.loading-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0B1838;
+  color: #C9A961;
+}
+.loading-title {
+  font-family: 'Cinzel', serif;
+  font-size: 72px;
+  letter-spacing: 8px;
+  text-shadow: 0 0 30px rgba(201,169,97,0.4);
+}
+.loading-progress {
+  margin-top: 24px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  opacity: 0.7;
+}
+
+/* ---------- TIMER (pojok kanan-atas, satu-satunya teks yang dirender) ----------
+   Font besar, warna emas, ada outline + glow biar kebaca dari jauh di LED. */
+.timer-display {
+  position: absolute;
+  top: 40px;
+  right: 60px;
+  font-family: 'Cinzel', 'Georgia', serif;
+  font-weight: 700;
+  font-size: 110px;             /* besar — visible dari jauh */
+  line-height: 1;
+  color: #C9A961;               /* gold */
+  letter-spacing: 4px;
+  /* Outline gelap + glow emas biar nge-pop di atas gambar apapun */
+  text-shadow:
+    -3px -3px 0 #0B1838,
+     3px -3px 0 #0B1838,
+    -3px  3px 0 #0B1838,
+     3px  3px 0 #0B1838,
+     0 0 24px rgba(201,169,97,0.6);
+  padding: 8px 24px;
+  border-radius: 12px;
+  background: rgba(11,24,56,0.35);  /* tipis biar contrast aman di bg apapun */
+  border: 2px solid rgba(201,169,97,0.4);
+  z-index: 10;
+}
+
+.timer-display.is-paused {
+  color: #8B1E3F;               /* burgundy = paused/expired */
+  border-color: rgba(139,30,63,0.5);
+}
+
+.timer-display.is-expired {
+  color: #8B1E3F;
+  animation: timer-pulse 1.4s ease-in-out infinite;
+}
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* ---------- Deretan kartu (area bawah-tengah) ----------
+   Ditata flexbox; ukuran kartu auto-fit ke jumlah kartu via inline-style dari JS. */
+.cards-row {
+  position: absolute;
+  left: 160px;
+  right: 160px;                 /* lebar kerja = 1600px */
+  bottom: 60px;
+  height: 420px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 40px;
+  z-index: 5;
+}
+
+.card {
+  height: 100%;
+  /* max-width di-set dari JS supaya 3 atau 6 kartu sama-sama fit */
+  width: auto;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 16px 28px rgba(0,0,0,0.55));
+}
+
+/* ---------- Wizco mascot (default: pojok kiri-bawah, ~280px tinggi) ---------- */
+.wizco {
+  position: absolute;
+  height: 280px;                /* ~26% dari 1080 — sesuai pilihan brief */
+  width: auto;
+  z-index: 6;
+  filter: drop-shadow(0 12px 20px rgba(0,0,0,0.5));
+  pointer-events: none;
+}
+.wizco.pos-bottom-left   { left: 40px;  bottom: 40px; }
+.wizco.pos-bottom-right  { right: 40px; bottom: 40px; }
+.wizco.pos-top-left      { left: 40px;  top: 40px;    }
+.wizco.pos-top-right     { right: 40px; top: 40px;    }
+
+/* ---------- Placeholder kalau gambar gagal load (dev only) ---------- */
+.placeholder-box {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg,
+    #1a1a1a 0 20px,
+    #2a2a2a 20px 40px
+  );
+  color: #C9A961;
+  font-family: 'Courier New', monospace;
+  font-size: 24px;
+  padding: 40px;
+  text-align: center;
+  border: 4px dashed #C9A961;
+}
+/* Placeholder versi kartu — kecil, tetap di area card row */
+.card.placeholder-card {
+  background: repeating-linear-gradient(45deg, #1a1a1a 0 12px, #2a2a2a 12px 24px);
+  color: #C9A961;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  border: 2px dashed #C9A961;
+  padding: 12px;
+  text-align: center;
+  word-break: break-all;
+}
