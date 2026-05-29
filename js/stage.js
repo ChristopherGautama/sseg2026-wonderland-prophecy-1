@@ -100,29 +100,37 @@
   }
 
   // =========================================================
-  // 3. AudioEngine — sangat ringkas
-  //    - BG music: 1 track loop, fade-in saat unlock pertama
-  //    - SFX reveal & time-up: play-on-demand
+  // 3. AudioEngine — multi-track BG dengan crossfade
+  //    - BG music: PER LAYAR. setTrack(path) crossfade ~0.8s ke track baru.
+  //      Layar yang TIDAK punya field music → tidak panggil setTrack → track
+  //      yang sedang main TERUS LANJUT.
+  //    - SFX reveal & time-up & reveal-sting: play-on-demand
   //    - Browser autoplay-block: tunggu user interaction pertama
   //      (keydown / click) → baru play() dipanggil
+  //    - Semua operasi audio dibungkus try/catch + safeAudio() supaya
+  //      file missing TIDAK menyebabkan error (silent skip).
   // =========================================================
   const audio = (function () {
     const cfg = window.AUDIO || {};
-    let bgMusic = null;
+    const TARGET_VOL = 0.35;   // brief: musik latar tetap pelan
+    const FADE = 0.8;          // detik — durasi crossfade
+
+    let muted = false;
+    let unlocked = false;      // sudah ada user interaction?
+    let currentPath = null;    // path BG yang sedang aktif
+    let currentAudio = null;   // HTMLAudioElement BG yang sedang aktif
     let sfxReveal = null;
     let sfxTimeUp = null;
-    let muted = false;
-    let unlocked = false;     // sudah ada user interaction?
-    let bgEnabled = !!cfg.music;
+    let sfxRevealSting = null;
+    const bgCache = {};        // path → HTMLAudioElement (reuse antar visit)
 
-    // Helper: buat Audio aman (kalau tag <audio> error, tetap return obj dummy)
+    // Helper: buat Audio aman. Listener 'error' cuma log — tidak throw.
     function safeAudio(path, opts) {
       if (!path) return null;
       try {
         const a = new Audio(path);
         if (opts && opts.loop) a.loop = true;
         if (opts && typeof opts.volume === 'number') a.volume = opts.volume;
-        // Kalau resource missing/404, kita biarkan — playSfx akan dibungkus try/catch
         a.addEventListener('error', function () {
           console.warn('[audio] gagal load:', path);
         });
@@ -133,41 +141,96 @@
       }
     }
 
-    function init() {
-      bgMusic   = safeAudio(cfg.music,     { loop: true, volume: 0.35 });
-      sfxReveal = safeAudio(cfg.sfxReveal, { loop: false, volume: 0.85 });
-      sfxTimeUp = safeAudio(cfg.sfxTimeUp, { loop: false, volume: 0.9 });
+    // Cache BG track per path supaya tidak load ulang setiap visit
+    function getOrCreateBg(path) {
+      if (bgCache[path]) return bgCache[path];
+      // Volume start = 0 → akan di-fade-in oleh setTrack/unlock
+      const a = safeAudio(path, { loop: true, volume: 0 });
+      if (a) bgCache[path] = a;
+      return a;
     }
 
-    function tryPlayBg() {
-      if (!bgEnabled || !bgMusic || muted) return;
-      // play() return Promise — kalau di-reject (autoplay block), kita coba lagi nanti
-      const p = bgMusic.play();
-      if (p && typeof p.catch === 'function') {
-        p.catch(function () { /* akan retry pas unlock */ });
+    // Fade volume sebuah audio dari nilai sekarang ke 'to' dalam FADE detik.
+    // Pakai GSAP kalau ada — fallback set langsung kalau tidak.
+    function fadeAudio(a, to, onComplete) {
+      if (!a) { if (onComplete) onComplete(); return; }
+      if (window.gsap) {
+        gsap.killTweensOf(a);
+        gsap.to(a, {
+          volume: to, duration: FADE, ease: 'sine.out',
+          onComplete: function () { if (onComplete) onComplete(); }
+        });
+      } else {
+        try { a.volume = to; } catch (e) {}
+        if (onComplete) onComplete();
+      }
+    }
+
+    // Mulai play BG dan fade-in dari 0 ke TARGET_VOL.
+    function playBgWithFadeIn(a) {
+      if (!a) return;
+      try {
+        a.volume = 0;
+        const p = a.play();
+        if (p && typeof p.catch === 'function') p.catch(function () {});
+      } catch (e) {}
+      fadeAudio(a, TARGET_VOL);
+    }
+
+    // Ganti track BG. Crossfade kalau ada track sebelumnya.
+    // Path sama dengan currentPath → no-op (anti-restart saat repeat layar).
+    function setTrack(path) {
+      if (!path) return;
+      if (path === currentPath) return;
+
+      const oldAudio = currentAudio;
+      const newAudio = getOrCreateBg(path);
+      currentPath = path;
+      currentAudio = newAudio;
+
+      // Fade-out track lama lalu pause
+      if (oldAudio) {
+        fadeAudio(oldAudio, 0, function () {
+          try { oldAudio.pause(); } catch (e) {}
+        });
+      }
+
+      // Fade-in track baru — hanya kalau sudah unlock & tidak muted
+      if (newAudio && unlocked && !muted) {
+        playBgWithFadeIn(newAudio);
       }
     }
 
     function unlock() {
       if (unlocked) return;
       unlocked = true;
-      tryPlayBg();
+      // Pertama kali user interaction → coba play current track
+      if (currentAudio && !muted) playBgWithFadeIn(currentAudio);
     }
 
     function setMuted(m) {
       muted = m;
-      if (bgMusic) bgMusic.muted = m;
+      if (currentAudio) currentAudio.muted = m;
       if (sfxReveal) sfxReveal.muted = m;
       if (sfxTimeUp) sfxTimeUp.muted = m;
-      if (!m && unlocked) tryPlayBg();
+      if (sfxRevealSting) sfxRevealSting.muted = m;
+      // Unmute setelah sudah unlock & track paused → resume
+      if (!m && unlocked && currentAudio && currentAudio.paused) {
+        try {
+          const p = currentAudio.play();
+          if (p && typeof p.catch === 'function') p.catch(function () {});
+        } catch (e) {}
+      }
     }
 
     function toggleMute() { setMuted(!muted); }
 
-    // Play SFX dengan reset ke posisi 0 supaya bisa di-trigger ulang
+    // Play SFX (one-shot, reset ke posisi 0 supaya bisa di-trigger ulang).
+    // which: 'reveal' | 'timeup' | 'reveal-sting'
     function playSfx(which) {
-      const a = which === 'reveal' ? sfxReveal :
-                which === 'timeup' ? sfxTimeUp : null;
+      const a = which === 'reveal'        ? sfxReveal :
+                which === 'timeup'        ? sfxTimeUp :
+                which === 'reveal-sting'  ? sfxRevealSting : null;
       if (!a) return;
       try {
         a.currentTime = 0;
@@ -176,12 +239,26 @@
       } catch (e) { /* file mungkin missing — ignore */ }
     }
 
+    function init() {
+      sfxReveal      = safeAudio(cfg.sfxReveal,      { loop: false, volume: 0.85 });
+      sfxTimeUp      = safeAudio(cfg.sfxTimeUp,      { loop: false, volume: 0.9  });
+      // Sting BG kedua — agak pelan supaya tidak overpower sfx-05
+      sfxRevealSting = safeAudio(cfg.sfxRevealSting, { loop: false, volume: 0.55 });
+
+      // Pre-create default BG track (volume 0 — belum play sampai unlock + screen mengoper)
+      if (cfg.music) {
+        currentAudio = getOrCreateBg(cfg.music);
+        currentPath  = cfg.music;
+      }
+    }
+
     init();
     return {
       unlock: unlock,
       toggleMute: toggleMute,
       isMuted: function () { return muted; },
-      playSfx: playSfx
+      playSfx: playSfx,
+      setTrack: setTrack
     };
   })();
 
@@ -211,6 +288,11 @@
       displayEl.textContent = format(remaining);
       displayEl.classList.toggle('is-paused', !running && remaining > 0);
       displayEl.classList.toggle('is-expired', remaining === 0 && initialSec > 0);
+      // Polish Fase E: sisa <= 10 detik (>0) → state "warning" (burgundy + pulse).
+      // Saat mencapai 00:00 atau di-reset → otomatis lepas (pulse mati).
+      // Animasi pulse dijalankan murni oleh CSS (.is-warning) — berhenti sendiri
+      // saat elemen dihapus dari DOM, jadi tidak perlu cleanup manual.
+      displayEl.classList.toggle('is-warning', remaining > 0 && remaining <= 10);
     }
 
     function tick() {
@@ -300,6 +382,33 @@
     return img;
   }
 
+  // Helper: animasi Wizco "masuk" — slide dari arah sudutnya, overshoot kecil,
+  // lalu idle bobbing naik-turun pelan supaya maskot terasa hidup.
+  // Caller WAJIB membungkus pemanggilan di dalam gsap.context() supaya tween
+  // & loop yoyo otomatis di-kill saat layar swap (mencegah animasi numpuk).
+  function animateWizcoEnter(el, pos) {
+    if (!window.gsap || !el) return;
+    // Arah masuk berdasarkan posisi sudut
+    const fromX = (pos === 'bottom-right' || pos === 'top-right') ? 80 : -80;
+    const fromY = (pos === 'top-left'     || pos === 'top-right') ? -40 : 40;
+
+    gsap.fromTo(el,
+      { opacity: 0, x: fromX, y: fromY },
+      {
+        opacity: 1, x: 0, y: 0,
+        duration: 0.6, ease: 'back.out(1.4)',
+        onComplete: function () {
+          // Idle bobbing — y bergeser ±8px, loop yoyo selamanya.
+          // Akan di-kill oleh gsap.context() saat layar pindah.
+          gsap.to(el, {
+            y: -8, duration: 2,
+            repeat: -1, yoyo: true, ease: 'sine.inOut'
+          });
+        }
+      }
+    );
+  }
+
   // Helper: bikin satu kartu (img) atau placeholder kalau gagal load
   function buildCard(path, maxWidth) {
     if (imageStatus[path] === 'failed') {
@@ -318,6 +427,16 @@
     return img;
   }
 
+  // Helper kecil: kalau layar punya Wizco, register animasi masuk + idle
+  // dalam gsap.context() yang disimpan di root.__gsapCtx → otomatis di-kill
+  // oleh screenManager.show() saat pindah layar (idle yoyo tidak menumpuk).
+  function attachWizcoContext(root, wizcoEl, pos) {
+    if (!wizcoEl || !window.gsap) return;
+    root.__gsapCtx = gsap.context(function () {
+      animateWizcoEnter(wizcoEl, pos);
+    }, root);
+  }
+
   // ---------- Renderer per type ----------
   function renderTransition(data) {
     const root = document.createElement('div');
@@ -325,6 +444,7 @@
     root.appendChild(buildScreenImage(data.img));
     const w = buildWizco(data.wizco, data.wizcoPos);
     if (w) root.appendChild(w);
+    attachWizcoContext(root, w, data.wizcoPos);
     return root;
   }
 
@@ -358,6 +478,7 @@
 
     const w = buildWizco(data.wizco, data.wizcoPos);
     if (w) root.appendChild(w);
+    attachWizcoContext(root, w, data.wizcoPos);
     return root;
   }
 
@@ -367,6 +488,7 @@
     root.appendChild(buildScreenImage(data.img));
     const w = buildWizco(data.wizco, data.wizcoPos);
     if (w) root.appendChild(w);
+    attachWizcoContext(root, w, data.wizcoPos);
     return root;
   }
 
@@ -450,6 +572,10 @@
     // 5. Animasi (semua di dalam gsap.context supaya auto-killable)
     if (window.gsap) {
       const ctx = gsap.context(function () {
+        // 5z. Wizco masuk + idle (kalau ada) — share context yang sama supaya
+        //     idle yoyo ikut di-kill saat layar swap.
+        if (w) animateWizcoEnter(w, data.wizcoPos);
+
         // 5a. Kartu: scale 0.4 → 1, fade-in, easing back.out untuk efek "muncul mantap"
         if (cardEl) {
           gsap.fromTo(cardEl,
@@ -530,6 +656,10 @@
       // Detach timer dari scene lama (kalau ada)
       timer.detach();
 
+      // Mood switch: kalau layar baru deklarasikan track musik berbeda,
+      // crossfade ke track tsb. Layar tanpa field music → no-op (track lanjut).
+      if (data.music) audio.setTrack(data.music);
+
       // Build layar baru di luar tree dulu
       const nextEl = renderByType(data);
 
@@ -566,9 +696,11 @@
         );
       }
 
-      // SFX reveal saat masuk layar reveal (baik image-reveal lama maupun card-reveal)
+      // SFX reveal + sting m04 (one-shot, ~10s) saat masuk layar reveal/card-reveal.
+      // Sting di-mix di atas BG track yang sedang main (volume sting pelan 0.55).
       if (data.type === 'reveal' || data.type === 'card-reveal') {
         audio.playSfx('reveal');
+        audio.playSfx('reveal-sting');
       }
     }
 

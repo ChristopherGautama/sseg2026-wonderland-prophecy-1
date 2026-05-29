@@ -17,6 +17,11 @@
    - wizco       : (opsional) path PNG Wizco yang ditempel di sudut
    - wizcoPos    : (opsional) "bottom-left" (default) | "bottom-right"
                                 | "top-left" | "top-right"
+   - music       : (opsional) path file musik BG untuk layar ini.
+                   Engine akan crossfade ~0.8s ke track ini saat layar masuk.
+                   JIKA tidak ada field music, track BG yang sedang berjalan
+                   TERUS LANJUT (tidak diputus). Jadi cukup set music di
+                   layar di mana mood-nya benar-benar BERUBAH.
    ========================================================= */
 
 const SCREENS = [
@@ -24,6 +29,7 @@ const SCREENS = [
     id: "opening",
     type: "transition",
     img: "assets/img/scene/scene-opening.png",
+    music: "assets/audio/music/m01-opening.mp3",   // megah, default sepanjang acara
     wizco: "assets/img/wizco/wizco-greeting.png",
     wizcoPos: "bottom-left"
   },
@@ -125,7 +131,9 @@ const SCREENS = [
   // CATATAN: trio pemenang masih PENDING dari Cece. Reveal pakai banner reveal-r5.png
   //         (bukan per-kartu) — handler reveal di engine tinggal tampilkan PNG jadi.
   // Engine auto-fit: 6 kartu × ~233px lebar + 5 gap × 40px = 1598px (pas, margin tipis).
-  { id: "t-r5", type: "transition", img: "assets/img/transition/transition-r5.png" },
+  // Mood SWITCH: krisis / Black Swan → tegang sampai akhir R5
+  { id: "t-r5", type: "transition", img: "assets/img/transition/transition-r5.png",
+      music: "assets/audio/music/m07-bonus-urgent.mp3" },
   {
     id: "r5",
     type: "scene",
@@ -162,7 +170,9 @@ const SCREENS = [
   // Kartu CSTR (cstr-asset-card.png) memang BELUM ada di folder assets.
   // Preloader akan tandai 'failed' → renderer tampilkan .placeholder-card (stripe emas).
   // Itu DISENGAJA — jangan dianggap bug.
-  { id:"t-r6", type:"transition", img:"assets/img/transition/transition-r6.png" },
+  // Mood SWITCH: balik ke default megah setelah krisis R5 selesai
+  { id:"t-r6", type:"transition", img:"assets/img/transition/transition-r6.png",
+      music:"assets/audio/music/m01-opening.mp3" },
   { id:"r6", type:"scene", img:"assets/img/scene/scene-r6.png", timer:90,
       cards:[ "assets/img/cards/universe/cstr-asset-card.png",
               "assets/img/cards/universe/rbbt-asset-card.png",
@@ -175,7 +185,9 @@ const SCREENS = [
 
   // --- RONDE 7 — IPO Battle. 4 kartu IPO. Jawaban benar: EVRG + HNPR. ---
   // 4 kartu × ~370px lebar + 3 gap × 40px = ~1600px (pas frame cards-row).
-  { id:"t-r7", type:"transition", img:"assets/img/transition/transition-r7.png" },
+  // Mood SWITCH: IPO peak — track triumphant tema R7
+  { id:"t-r7", type:"transition", img:"assets/img/transition/transition-r7.png",
+      music:"assets/audio/music/m08-r7-ipo-peak.mp3" },
   { id:"r7", type:"scene", img:"assets/img/scene/scene-r7.png", timer:90,
       cards:[ "assets/img/cards/ipo/hnpr-ipo-card.png",
               "assets/img/cards/ipo/mrrt-ipo-card.png",
@@ -186,7 +198,9 @@ const SCREENS = [
 
   // --- BONUS — The Reversal. 2 kartu (SKIP ditangani fisik, sudah ada di gambar scene). ---
   // Engine auto-fit: 2 kartu lebar — beri max-width otomatis dari cards-row.
-  { id:"t-bonus", type:"transition", img:"assets/img/transition/transition-bonus.png" },
+  // Mood SWITCH: twist Bonus → tegang lagi (sama track dgn R5)
+  { id:"t-bonus", type:"transition", img:"assets/img/transition/transition-bonus.png",
+      music:"assets/audio/music/m07-bonus-urgent.mp3" },
   { id:"bonus", type:"scene", img:"assets/img/scene/scene-bonus.png", timer:90,
       cards:[ "assets/img/cards/universe/qull-asset-card.png",
               "assets/img/cards/universe/noct-asset-card.png" ] },
@@ -195,16 +209,20 @@ const SCREENS = [
 
   // --- CLOSING — cinematic penutup, tanpa ranking (display only). ---
   // type "transition" → gambar full + wizco di sudut, tanpa SFX reveal.
-  // Musik BG tetap berjalan (loop dari Fase A).
+  // Mood SWITCH: triumphant penutup.
   { id:"closing", type:"transition", img:"assets/img/scene/scene-closing.png",
+      music:"assets/audio/music/m09-closing.mp3",
       wizco:"assets/img/wizco/wizco-triumphant.png", wizcoPos:"bottom-left" }
 ];
 
 /* Path audio — engine akan coba load. Kalau file tidak ada, JANGAN error. */
 const AUDIO = {
-  music:     "assets/audio/music/m01-opening.mp3",   // BG music loop sepanjang acara
-  sfxReveal: "assets/audio/sfx/sfx-05-reveal.mp3",   // saat masuk layar reveal
-  sfxTimeUp: "assets/audio/sfx/sfx-04-timeup.mp3"    // saat timer mencapai 00:00
+  // Default BG track. Dipakai sebagai fallback awal sebelum SCREENS[0].music
+  // mengoper. Layar yang punya field "music" sendiri akan crossfade ke track-nya.
+  music:          "assets/audio/music/m01-opening.mp3",
+  sfxReveal:      "assets/audio/sfx/sfx-05-reveal.mp3",       // saat masuk layar reveal
+  sfxTimeUp:      "assets/audio/sfx/sfx-04-timeup.mp3",       // saat timer mencapai 00:00
+  sfxRevealSting: "assets/audio/music/m04-reveal-sting.mp3"   // sting pendek ~10s di atas BG saat reveal
 };
 
 /* Ekspor ke global (vanilla — tidak ada bundler) */

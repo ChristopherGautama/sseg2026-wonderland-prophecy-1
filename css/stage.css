@@ -118,13 +118,22 @@ html, body {
   border-color: rgba(139,30,63,0.5);
 }
 
+/* 00:00 — pulse OFF (sesuai brief: SFX timeup main, lalu diam). */
 .timer-display.is-expired {
   color: #8B1E3F;
-  animation: timer-pulse 1.4s ease-in-out infinite;
+  border-color: rgba(139,30,63,0.5);
 }
-@keyframes timer-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
+
+/* Sisa <= 10 detik (>0) — pulse halus scale 1.0↔1.08 + warna burgundy.
+   Dipasang/dilepas oleh timer.render() di stage.js. */
+.timer-display.is-warning {
+  color: #8B1E3F;
+  border-color: rgba(139,30,63,0.55);
+  animation: timer-warning-pulse 0.9s ease-in-out infinite;
+}
+@keyframes timer-warning-pulse {
+  0%, 100% { transform: scale(1.00); }
+  50%      { transform: scale(1.08); }
 }
 
 /* ---------- Deretan kartu (area bawah-tengah) ----------
