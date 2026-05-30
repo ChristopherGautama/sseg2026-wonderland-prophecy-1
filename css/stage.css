@@ -1,62 +1,141 @@
-/* ===== Reset ===== */
+/* ============================================================
+   Wonderland Prophecy — Stage View (Fase A)
+   Slideshow background sinematik, fullscreen, offline.
+   ============================================================ */
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
+
+html, body {
+  width: 100%;
+  height: 100%;
   background: #05060a;
   overflow: hidden;
   font-family: Georgia, "Times New Roman", serif;
   color: #F4E8C8;
 }
 
-/* ===== Background layer (crossfade ping-pong) ===== */
-#bg-layer { position: fixed; inset: 0; z-index: 0; background: #05060a; }
+/* ---------- Background layer (2 slot crossfade) ---------- */
+#bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
 .bg-slot {
-  position: absolute; inset: 0;
-  background-size: cover; background-position: center;
-  opacity: 0; transition: opacity .6s ease;
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.6s ease;
 }
-.bg-slot.show { opacity: 1; }
 
-/* ===== Stage (safe-area 1920x1080, di-scale via JS) ===== */
+.bg-slot.show {
+  opacity: 1;
+}
+
+/* ---------- Vignette sinematik ---------- */
+#vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.35) 75%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+/* ---------- Safe-area stage (1920x1080, scaled) ---------- */
 #stage {
-  position: fixed; left: 50%; top: 50%;
-  width: 1920px; height: 1080px;
-  transform: translate(-50%, -50%);
-  transform-origin: center;
-  z-index: 3; pointer-events: none;
-  outline: 1px dashed rgba(201,169,97,.25); /* bantu lihat safe-area, dihapus nanti */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+  z-index: 2;
+  pointer-events: none;
 }
 
-/* ===== Loading screen ===== */
+/* ---------- Loading screen ---------- */
 #loading-screen {
-  position: fixed; inset: 0; z-index: 50;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: #0B1838; gap: 18px;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #0B1838;
 }
-#loading-screen.hidden { display: none; }
-.loading-title { font-size: 52px; color: #C9A961; letter-spacing: 3px; }
-.loading-progress { font-size: 26px; }
 
-/* ===== Scene label (dev) ===== */
+.loading-title {
+  font-size: 52px;
+  color: #C9A961;
+  letter-spacing: 2px;
+}
+
+.loading-progress {
+  font-size: 26px;
+  color: #F4E8C8;
+  opacity: 0.8;
+}
+
+/* ---------- Scene label (kiri-atas) ---------- */
 #scene-label {
-  position: fixed; left: 22px; top: 18px; z-index: 20;
-  font-size: 22px; color: #C9A961; opacity: .85; text-shadow: 0 1px 3px #000;
+  position: fixed;
+  top: 22px;
+  left: 28px;
+  z-index: 10;
+  font-size: 22px;
+  color: #C9A961;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
-/* ===== HUD hint ===== */
+/* ---------- HUD hint (kanan-bawah) ---------- */
 #hud-hint {
-  position: fixed; right: 18px; bottom: 14px; z-index: 20;
-  font-size: 16px; color: #C9A961;
-  background: rgba(11,24,56,.55); border: 1px solid rgba(201,169,97,.4);
-  padding: 6px 12px; border-radius: 8px;
+  position: fixed;
+  bottom: 22px;
+  right: 28px;
+  z-index: 10;
+  font-size: 18px;
+  color: rgba(201, 169, 97, 0.85);
+  padding: 8px 16px;
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 6px;
+  background: rgba(11, 24, 56, 0.4);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
-/* ===== Help overlay ===== */
+/* ---------- Help overlay ---------- */
 #help-overlay {
-  position: fixed; inset: 0; z-index: 40;
-  background: rgba(5,6,10,.88);
-  display: flex; align-items: center; justify-content: center;
-  text-align: center; font-size: 30px; line-height: 2; color: #F4E8C8;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  background: rgba(5, 6, 10, 0.92);
+  color: #F4E8C8;
+  font-size: 30px;
+  line-height: 1.8;
 }
-#help-overlay.hidden { display: none; }
+
+#help-overlay h2 {
+  font-size: 44px;
+  color: #C9A961;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
 
 .hidden { display: none !important; }

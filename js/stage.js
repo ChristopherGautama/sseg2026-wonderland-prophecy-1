@@ -1,105 +1,160 @@
 // ============================================================
-// STAGE ENGINE (Fase A) — slideshow sinematik semua background
-// Pakai CONFIG / ASSETS / SCENES dari config.js
+// Wonderland Prophecy — Stage View (Fase A)
+// Slideshow background sinematik. Baca CONFIG/ASSETS/SCENES dari config.js.
+// Vanilla JS, offline, operator-paced.
 // ============================================================
 
-const stageEl    = document.getElementById("stage");
-const slots      = document.querySelectorAll(".bg-slot");
-const loadingEl  = document.getElementById("loading-screen");
-const progressEl = document.getElementById("loading-progress");
-const labelEl    = document.getElementById("scene-label");
-const helpEl     = document.getElementById("help-overlay");
+(function () {
+  "use strict";
 
-let current    = 0;      // index scene aktif
-let activeSlot = 0;      // slot .bg-slot yang sedang tampil (0 atau 1)
-let isMuted    = false;  // sementara: audio belum ada (Fase berikutnya)
+  // ---------- Elemen DOM ----------
+  const stageEl = document.getElementById("stage");
+  const slots = document.querySelectorAll(".bg-slot");
+  const loadingScreen = document.getElementById("loading-screen");
+  const loadingProgress = document.getElementById("loading-progress");
+  const sceneLabel = document.getElementById("scene-label");
+  const helpOverlay = document.getElementById("help-overlay");
 
-// --- a) Scaling stage agar pas di layar manapun ---
-function resizeStage() {
-  const scale = Math.min(window.innerWidth / CONFIG.canvasW, window.innerHeight / CONFIG.canvasH);
-  stageEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
-}
+  // ---------- State ----------
+  let currentIndex = 0;   // index scene aktif
+  let activeSlot = 0;     // slot .bg-slot yang sedang tampil (0 / 1)
+  let muted = false;      // audio belum ada (fase berikutnya)
 
-// --- helper: ambil path gambar dari sebuah scene ---
-function scenePath(scene) {
-  return ASSETS[scene.type][scene.key];
-}
+  // ---------- a) Scaling safe-area ----------
+  function resizeStage() {
+    const scale = Math.min(
+      window.innerWidth / CONFIG.canvasW,
+      window.innerHeight / CONFIG.canvasH
+    );
+    stageEl.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+  }
 
-// --- b) Preload semua background + transition ---
-function preload() {
-  const paths = [
-    ...Object.values(ASSETS.bg),
-    ...Object.values(ASSETS.transition)
-  ];
-  const total = paths.length;
-  let done = 0;
+  // ---------- b) Preload semua background + transition ----------
+  function preload() {
+    const paths = [];
+    Object.values(ASSETS.bg).forEach((p) => paths.push(p));
+    Object.values(ASSETS.transition).forEach((p) => paths.push(p));
+    const unique = Array.from(new Set(paths));
 
-  function tick() {
-    done++;
-    progressEl.textContent = `${done} / ${total}`;
-    if (done === total) {
-      loadingEl.classList.add("hidden");
+    const total = unique.length;
+    let done = 0;
+    loadingProgress.textContent = "0 / " + total;
+
+    function tick() {
+      done++;
+      loadingProgress.textContent = done + " / " + total;
+      if (done >= total) finish();
+    }
+
+    function finish() {
+      loadingScreen.classList.add("hidden");
       showScene(0);
+    }
+
+    if (total === 0) { finish(); return; }
+
+    unique.forEach((path) => {
+      const img = new Image();
+      img.onload = tick;
+      img.onerror = () => { console.warn("Gagal memuat:", path); tick(); };
+      img.src = path;
+    });
+  }
+
+  // ---------- c) Tampilkan scene ke-i (crossfade ping-pong) ----------
+  function showScene(i) {
+    if (i < 0) i = 0;
+    if (i > SCENES.length - 1) i = SCENES.length - 1;
+    currentIndex = i;
+
+    const item = SCENES[i];
+    const path = ASSETS[item.type][item.key];
+
+    const nextSlot = activeSlot === 0 ? 1 : 0;
+    slots[nextSlot].style.backgroundImage = path ? 'url("' + path + '")' : "none";
+
+    requestAnimationFrame(() => {
+      slots[nextSlot].classList.add("show");
+      slots[activeSlot].classList.remove("show");
+      activeSlot = nextSlot;
+    });
+
+    sceneLabel.textContent = (i + 1) + "/" + SCENES.length + " · " + item.name;
+  }
+
+  // ---------- d) Navigasi ----------
+  function next() { if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1); }
+  function prev() { if (currentIndex > 0) showScene(currentIndex - 1); }
+  function reset() { showScene(0); }
+
+  // ---------- Fullscreen ----------
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => console.warn(err));
+    } else {
+      document.exitFullscreen();
     }
   }
 
-  progressEl.textContent = `0 / ${total}`;
-  paths.forEach(path => {
-    const img = new Image();
-    img.onload  = tick;
-    img.onerror = () => { console.warn("Gagal load:", path); tick(); };
-    img.src = path;
-  });
-}
-
-// --- c) Tampilkan scene ke-i pakai crossfade ping-pong ---
-function showScene(i) {
-  const scene    = SCENES[i];
-  const nextSlot = 1 - activeSlot;
-
-  slots[nextSlot].style.backgroundImage = `url("${scenePath(scene)}")`;
-
-  requestAnimationFrame(() => {
-    slots[nextSlot].classList.add("show");
-    slots[activeSlot].classList.remove("show");
-    activeSlot = nextSlot;
-  });
-
-  labelEl.textContent = `${i + 1}/${SCENES.length} · ${scene.name}`;
-}
-
-// --- d) Navigasi ---
-function next()  { current = Math.min(current + 1, SCENES.length - 1); showScene(current); }
-function prev()  { current = Math.max(current - 1, 0);                 showScene(current); }
-function reset() { current = 0; showScene(0); }
-
-// --- toggle fullscreen ---
-function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-  else document.exitFullscreen();
-}
-
-// --- e) Keyboard ---
-function onKey(e) {
-  switch (e.key) {
-    case " ":
-    case "ArrowRight": e.preventDefault(); next(); break;
-    case "ArrowLeft":  prev(); break;
-    case "r": case "R": reset(); break;
-    case "f": case "F": toggleFullscreen(); break;
-    case "m": case "M": isMuted = !isMuted; console.log("Muted:", isMuted); break;
-    case "?": helpEl.classList.toggle("hidden"); break;  // Shift+/
+  // ---------- Mute (placeholder, audio di fase berikutnya) ----------
+  function toggleMute() {
+    muted = !muted;
+    console.log("Mute:", muted);
   }
-}
 
-// --- f) Init ---
-function init() {
-  helpEl.textContent =
-    "Space / → : Maju · ← : Mundur · R : Reset · F : Fullscreen · M : Mute · ? : Tutup bantuan";
-  resizeStage();
-  window.addEventListener("resize", resizeStage);
-  window.addEventListener("keydown", onKey);
-  preload();
-}
+  // ---------- Help overlay ----------
+  function toggleHelp() {
+    helpOverlay.classList.toggle("hidden");
+  }
 
-init();
+  function fillHelp() {
+    helpOverlay.innerHTML =
+      "<h2>Bantuan Kontrol</h2>" +
+      "<div>Space / → &nbsp; Maju ke scene berikutnya</div>" +
+      "<div>← &nbsp; Mundur ke scene sebelumnya</div>" +
+      "<div>R &nbsp; Reset ke awal</div>" +
+      "<div>F &nbsp; Fullscreen</div>" +
+      "<div>M &nbsp; Mute / unmute</div>" +
+      "<div>? &nbsp; Tutup bantuan ini</div>";
+  }
+
+  // ---------- e) Keyboard ----------
+  function onKeydown(e) {
+    switch (e.key) {
+      case " ":
+      case "ArrowRight":
+        e.preventDefault();
+        next();
+        break;
+      case "ArrowLeft":
+        prev();
+        break;
+      case "r":
+      case "R":
+        reset();
+        break;
+      case "f":
+      case "F":
+        toggleFullscreen();
+        break;
+      case "m":
+      case "M":
+        toggleMute();
+        break;
+      case "?":
+        toggleHelp();
+        break;
+    }
+  }
+
+  // ---------- f) Init ----------
+  function init() {
+    fillHelp();
+    resizeStage();
+    window.addEventListener("resize", resizeStage);
+    window.addEventListener("keydown", onKeydown);
+    preload();
+  }
+
+  init();
+})();

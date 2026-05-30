@@ -1,36 +1,37 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wonderland Prophecy — Stage View</title>
-
-  <!-- GSAP CDN (baru dipakai Fase B; Fase A cukup CSS transition) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-
   <link rel="stylesheet" href="css/stage.css" />
+  <!-- GSAP CDN: belum dipakai di Fase A, disiapkan untuk fase berikutnya -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 </head>
 <body>
-  <!-- Lapisan background fullscreen: 2 slot untuk crossfade ping-pong -->
+  <!-- Lapisan background: 2 slot ping-pong untuk crossfade -->
   <div id="bg-layer">
     <div class="bg-slot"></div>
     <div class="bg-slot"></div>
   </div>
 
-  <!-- Safe-area konten 1920x1080 (kosong dulu, diisi fase berikutnya) -->
+  <!-- Vignette sinematik (coded, bukan gambar) -->
+  <div id="vignette"></div>
+
+  <!-- Safe-area 1920x1080, di-scale via JS. Kosong di Fase A. -->
   <div id="stage"></div>
 
-  <!-- Layar loading awal -->
+  <!-- Loading screen saat preload aset -->
   <div id="loading-screen">
     <div class="loading-title">Loading…</div>
-    <div class="loading-progress" id="loading-progress">0 / 0</div>
+    <div id="loading-progress" class="loading-progress">0 / 0</div>
   </div>
 
-  <!-- Label dev pojok kiri-atas -->
+  <!-- Label scene pojok kiri-atas -->
   <div id="scene-label"></div>
 
   <!-- Hint kontrol pojok kanan-bawah -->
-  <div id="hud-hint">Space ▶ &nbsp;·&nbsp; ← Back &nbsp;·&nbsp; F ⛶ &nbsp;·&nbsp; ? Bantuan</div>
+  <div id="hud-hint">Space ▶ · ← Mundur · F ⛶ · ? Bantuan</div>
 
   <!-- Overlay bantuan -->
   <div id="help-overlay" class="hidden"></div>
