@@ -28,6 +28,18 @@
   const showcaseEl = document.getElementById("card-showcase");
   const slotsEl = document.getElementById("card-slots");
 
+  // Fase 2 (v10) — overlay opening cinematic
+  const openingEl = document.getElementById("opening");
+  const opGlow = openingEl.querySelector(".op-glow");
+  const opParticles = openingEl.querySelector(".op-particles");
+  const opTitle = openingEl.querySelector(".op-title");
+  const opSweep = openingEl.querySelector(".op-sweep");
+  const OPENING_ASSETS = {
+    emblem:  "assets/img/ui/title-lockup.png",
+    divider: "assets/img/ui/ornament-divider.png",
+    spark:   "assets/img/shared/particle-goldspark.png"
+  };
+
   // Poses Wizco per konteks (aset di assets/img/wizco/).
   const WIZCO_POSE = {
     opening: "assets/img/wizco/wizco-greeting.png",
@@ -39,6 +51,13 @@
   let currentIndex = 0;   // index scene aktif
   let activeSlot = 0;     // slot .bg-slot yang sedang tampil (0 / 1)
   let muted = false;      // audio belum ada (fase berikutnya)
+
+  // Fase 2 (v10) — state opening
+  let openingActive = false;   // scene opening sedang tampil?
+  let openingExiting = false;  // animasi keluar opening sedang jalan?
+  let openingSparkTimer = null;// setInterval spawn spark
+  let openingBgTween = null;   // GSAP zoom bg-slot
+  let openingBgSlot = null;    // slot bg yg di-zoom (untuk reset)
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -124,6 +143,157 @@
     if (musicEl) musicEl.play().catch((e) => console.warn("audio blocked", e));
   }
 
+  // ============================================================
+  // Fase 2 (v10) — OPENING cinematic (title tengah + glow + spark + bg zoom)
+  // Self-contained: hanya jalan saat scene "opening", dibersihkan saat pindah.
+  // Audio m01-opening sudah ditangani engine musik (setSceneMusic + unlock).
+  // ============================================================
+
+  // Masuk scene opening: aktifkan overlay, bangun title, mulai FX.
+  function enterOpening() {
+    if (openingActive) return;          // idempotent (re-render scene yg sama)
+    openingActive = true;
+    openingExiting = false;
+    openingEl.classList.add("active");
+    opTitle.classList.remove("shown");
+    if (window.gsap) gsap.set(opSweep, { x: "-120%", opacity: 0 });
+    buildOpeningTitle();                // deteksi emblem → emblem / fallback teks
+    startOpeningSparks();
+    startOpeningBgZoom();
+  }
+
+  // Keluar bersih (tanpa animasi) — dipanggil saat pindah ke scene lain.
+  function teardownOpening() {
+    if (!openingActive && !openingExiting) { openingEl.classList.remove("active"); return; }
+    openingActive = false;
+    openingExiting = false;
+    openingEl.classList.remove("active");
+    stopOpeningSparks();
+    stopOpeningBgZoom();
+    if (window.gsap) gsap.killTweensOf([opTitle, opSweep]);
+    opTitle.innerHTML = "";
+    opTitle.classList.remove("shown");
+  }
+
+  // Deteksi title-lockup.png via Image onload/onerror (tanpa crash kalau 404).
+  function buildOpeningTitle() {
+    opTitle.innerHTML = "";
+    const probe = new Image();
+    probe.onload = () => fillOpeningTitle(true);
+    probe.onerror = () => fillOpeningTitle(false);
+    probe.src = OPENING_ASSETS.emblem;
+  }
+
+  function fillOpeningTitle(hasEmblem) {
+    if (!openingActive) return;         // sudah pindah scene sebelum probe selesai
+    opTitle.innerHTML = "";
+    if (hasEmblem) {
+      const img = document.createElement("img");
+      img.className = "op-emblem"; img.alt = "";
+      img.src = OPENING_ASSETS.emblem;
+      opTitle.appendChild(img);
+    } else {
+      const sub = document.createElement("div");
+      sub.className = "op-sub";
+      sub.textContent = "The Trials of the Oracle";
+      const h = document.createElement("div");
+      h.className = "op-maintitle";
+      h.textContent = "WONDERLAND PROPHECY";
+      const div = document.createElement("img");
+      div.className = "op-divider"; div.alt = "";
+      div.src = OPENING_ASSETS.divider;
+      div.onerror = () => div.remove();
+      opTitle.appendChild(sub);
+      opTitle.appendChild(h);
+      opTitle.appendChild(div);
+    }
+    playOpeningIntro();
+  }
+
+  // Animasi MASUK: scale 0.9→1 + opacity 0→1, power3.out ~1.1s.
+  function playOpeningIntro() {
+    if (window.gsap) {
+      gsap.killTweensOf(opTitle);
+      gsap.fromTo(opTitle,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 1.1, ease: "power3.out",
+          transformOrigin: "50% 50%" });
+    } else {
+      opTitle.classList.add("shown");   // fallback: tampil tanpa animasi
+    }
+  }
+
+  // Zoom/parallax bg SANGAT halus (loop yoyo). Target slot bg yg sedang show.
+  function startOpeningBgZoom() {
+    if (!window.gsap) return;
+    requestAnimationFrame(() => {
+      if (!openingActive) return;
+      openingBgSlot = document.querySelector(".bg-slot.show") || openingBgSlot;
+      if (!openingBgSlot) return;
+      gsap.killTweensOf(openingBgSlot);
+      gsap.set(openingBgSlot, { transformOrigin: "50% 50%" });
+      openingBgTween = gsap.fromTo(openingBgSlot,
+        { scale: 1, yPercent: 0 },
+        { scale: 1.07, yPercent: -1.5, duration: 22, ease: "sine.inOut",
+          repeat: -1, yoyo: true });
+    });
+  }
+  function stopOpeningBgZoom() {
+    if (openingBgTween) { openingBgTween.kill(); openingBgTween = null; }
+    if (openingBgSlot && window.gsap) gsap.set(openingBgSlot, { clearProps: "transform" });
+    openingBgSlot = null;
+  }
+
+  // Partikel goldspark ambient: spawn bertahap, loop CSS, di-cap jumlahnya.
+  function startOpeningSparks() {
+    stopOpeningSparks();
+    for (let i = 0; i < 10; i++) spawnSpark(true);   // isi awal (desync via delay negatif)
+    openingSparkTimer = setInterval(() => {
+      if (openingActive && opParticles.children.length < 22) spawnSpark(false);
+    }, 520);
+  }
+  function stopOpeningSparks() {
+    if (openingSparkTimer) { clearInterval(openingSparkTimer); openingSparkTimer = null; }
+    opParticles.innerHTML = "";
+  }
+  function spawnSpark(immediate) {
+    const s = document.createElement("img");
+    s.className = "op-spark"; s.alt = "";
+    s.src = OPENING_ASSETS.spark;
+    s.onerror = () => s.remove();
+    const size = 10 + Math.random() * 22;
+    const dur = 6 + Math.random() * 6;
+    const delay = immediate ? -(Math.random() * dur) : 0;
+    s.style.left = (Math.random() * 100) + "%";
+    s.style.width = size + "px";
+    s.style.setProperty("--sp-rise", (480 + Math.random() * 520) + "px");
+    s.style.setProperty("--sp-drift", (Math.random() * 120 - 60) + "px");
+    s.style.setProperty("--sp-op", (0.5 + Math.random() * 0.5).toFixed(2));
+    s.style.animation = "sparkFloat " + dur.toFixed(2) + "s linear " + delay.toFixed(2) + "s infinite";
+    opParticles.appendChild(s);
+  }
+
+  // Animasi KELUAR (SPACE): title scale 1→1.15 + fade + sapuan cahaya,
+  // power2.in ~0.7s → panggil done() untuk lanjut ke scene berikutnya.
+  function exitOpening(done) {
+    if (!openingActive || openingExiting) return;
+    openingExiting = true;
+    if (window.gsap) {
+      gsap.killTweensOf(opTitle);
+      gsap.to(opTitle, { scale: 1.15, opacity: 0, duration: 0.7,
+        ease: "power2.in", transformOrigin: "50% 50%" });
+      gsap.fromTo(opSweep,
+        { x: "-120%", opacity: 0 },
+        { x: "120%", opacity: 1, duration: 0.7, ease: "power2.in" });
+      gsap.delayedCall(0.72, () => { if (done) done(); });
+    } else {
+      opTitle.style.transition = "opacity .7s ease, transform .7s ease";
+      opTitle.style.opacity = "0";
+      opTitle.style.transform = "scale(1.15)";
+      setTimeout(() => { if (done) done(); }, 720);
+    }
+  }
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -199,7 +369,11 @@
   // Panel & wizco tampil hanya di scene "bg" yang punya data ROUNDS.
   // Scene "transition" → semua disembunyikan (cuma gambar romawi).
   function renderOverlay(item) {
-    const round = item.type === "bg" ? ROUNDS[item.key] : null;
+    // Fase 2 (v10) — opening punya cinematic sendiri (tanpa panel biru lama).
+    const isOpening = item.type === "bg" && item.key === "opening";
+    if (isOpening) enterOpening(); else teardownOpening();
+
+    const round = (item.type === "bg" && !isOpening) ? ROUNDS[item.key] : null;
 
     // --- Panel soal ---
     if (round) {
@@ -625,6 +799,14 @@
   // ---------- d) Navigasi ----------
   // Space/→ : maju sub-fase kartu dulu; kalau sudah DISCUSS → scene berikutnya.
   function next() {
+    // Fase 2 (v10) — opening: SPACE memutar animasi keluar dulu, lalu lanjut.
+    if (SCENES[currentIndex].key === "opening" && SCENES[currentIndex].type === "bg") {
+      if (openingExiting) return;                          // sedang keluar → abaikan
+      exitOpening(() => {
+        if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
+      });
+      return;
+    }
     if (roundCards.length) {
       // 2N+1 = DISCUSS · 2N+2 = REVEAL. Space di akhir DISCUSS → REVEAL,
       // Space saat REVEAL sudah tampil → lanjut scene berikutnya.
