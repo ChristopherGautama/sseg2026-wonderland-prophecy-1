@@ -66,6 +66,7 @@
   const soalCardsEl = boardEl.querySelector(".soal-cards");
   const soalShowcaseEl = boardEl.querySelector(".soal-showcase");
   const soalDarkEl = boardEl.querySelector(".soal-dark");   // V11 Fase 3 — overlay gelap showcase
+  const crimsonEl = document.getElementById("crimson-crisis"); // V11 Fase 4 — overlay merah R5
   const celebrateEl = boardEl.querySelector(".soal-celebrate");
   const BOARD_STATE_B = { scale: 0.66, y: -186 };  // shrink + naik ke atas-tengah
 
@@ -108,6 +109,9 @@
   let revealParticleTimer = null;  // setInterval spawn spark reveal
   let revealStampTimer = null;     // setTimeout stamp setelah flip selesai
   let revealCelebrateTimer = null; // setTimeout sembunyikan wizco celebrate
+
+  // V11 Fase 4 — state mode krisis merah (R5)
+  let crisisPulseTween = null;     // GSAP tween denyut vignette merah (yoyo)
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -585,11 +589,15 @@
     setPanel(false, false);           // papan BESAR di tengah
     setDim("full", false);
     setShowcaseDark(false, false);    // V11 Fase 3 — STATE A belum ada showcase
+    // V11 Fase 4 — mode merah HANYA R5 (mati untuk ronde lain). Intro storm sekali di STATE A.
+    setCrimsonCrisis(key === "r5");
+    if (key === "r5") crisisIntro();
     playBoardIntro();
   }
 
   // Keluar dari ronde (pindah scene non-ronde) → bersihkan board.
   function teardownRoundSoal() {
+    setCrimsonCrisis(false);          // V11 Fase 4 — pastikan mode merah mati saat keluar R5
     if (!roundActive) { boardEl.classList.remove("active"); return; }
     roundActive = false;
     soalStep = 0;
@@ -602,6 +610,63 @@
     boardDim.style.opacity = "";
     soalDarkEl.style.opacity = "";    // V11 Fase 3 — reset overlay gelap
     if (window.gsap) gsap.set(boardPanel, { clearProps: "all" });
+  }
+
+  // ============================================================
+  // V11 Fase 4 — Mode "Crimson Crisis" KHUSUS R5 (Black Swan Survival).
+  // Vignette merah berdenyut di pinggir + storm/lightning SFX di awal.
+  // Aktif hanya saat scene soal R5; mati total saat keluar (tak kebawa ronde lain).
+  // Aman tanpa aset/gsap (skip, tidak crash).
+  // ============================================================
+  const CRISIS_STORM_SFX     = "assets/audio/sfx/sfx-19-storm.mp3";
+  const CRISIS_LIGHTNING_SFX = "assets/audio/sfx/sfx-10-lightning.mp3";
+  const CRISIS_LIGHTNING_IMG = "assets/img/shared/fx-lightning.png";
+
+  // Nyala/mati mode merah. on → denyut halus (sine.inOut, yoyo); off → reset bersih.
+  function setCrimsonCrisis(on) {
+    if (!crimsonEl) return;
+    if (crisisPulseTween) { crisisPulseTween.kill(); crisisPulseTween = null; }
+    if (on) {
+      stageEl.classList.add("crimson-crisis-mode");
+      if (window.gsap) {
+        gsap.set(crimsonEl, { opacity: 1 });
+        crisisPulseTween = gsap.to(crimsonEl,
+          { opacity: 0.6, duration: 1.6, ease: "sine.inOut", yoyo: true, repeat: -1 });
+      }
+    } else {
+      stageEl.classList.remove("crimson-crisis-mode");
+      crimsonEl.querySelectorAll(".crisis-lightning").forEach((e) => e.remove());
+      crimsonEl.style.opacity = "";   // balik ke CSS default (opacity:0)
+    }
+  }
+
+  // Intro krisis (sekali, saat STATE A R5): storm ambience + lightning + 1–2 kilatan.
+  function crisisIntro() {
+    playOneShot(CRISIS_STORM_SFX, 0.5);
+    playOneShot(CRISIS_LIGHTNING_SFX, 0.7);
+    flashLightning();
+    setTimeout(flashLightning, 240);   // kilatan kedua singkat (TIDAK loop)
+  }
+
+  // Satu kilatan petir ~0.15s. Pakai fx-lightning kalau ada; kalau 404 → flash CSS murni.
+  function flashLightning() {
+    if (!crimsonEl) return;
+    const flash = document.createElement("div");
+    flash.className = "crisis-lightning";
+    const probe = new Image();
+    probe.onload = () => { flash.style.backgroundImage = 'url("' + CRISIS_LIGHTNING_IMG + '")'; };
+    probe.src = CRISIS_LIGHTNING_IMG;   // gagal load → biarkan background CSS yang tampil
+    crimsonEl.appendChild(flash);
+    if (window.gsap) {
+      gsap.fromTo(flash, { opacity: 0 },
+        { opacity: 0.85, duration: 0.07, ease: "power1.out",
+          onComplete() {
+            gsap.to(flash, { opacity: 0, duration: 0.12, ease: "power1.in",
+              onComplete() { flash.remove(); } });
+          } });
+    } else {
+      setTimeout(() => flash.remove(), 300);
+    }
   }
 
   // Skeleton band: N slot ter-reserve (visibility hidden) → layout stabil & terpusat.
@@ -955,6 +1020,7 @@
         spawnRevealFx();
         addRoundOverlays(key);
         playOneShot(REVEAL_SFX, SFX_VOL);   // V11 — HANYA sfx-05 (pendek); sting panjang dihentikan
+        if (key === "r5") playOneShot(CRISIS_LIGHTNING_SFX, 0.7);   // V11 Fase 4 — aksen petir sekali (R5)
         applyAnswerReveal(ans, key, true);
         if (ans.type !== "alloc") showCelebrateWizco();   // maskot utk non-alokasi
       }, 80);
