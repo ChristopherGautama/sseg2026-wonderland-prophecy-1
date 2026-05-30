@@ -100,7 +100,11 @@
 
   // Fase 5 (v10) — state papan soal
   let roundActive = false;   // scene ronde (papan soal) sedang tampil?
-  let soalStep = 0;          // 0 = STATE A (papan masuk) · 1 = STATE B (diskusi)
+  let soalStep = 0;          // 0=STATE A · 1..N=showcase · N+1=diskusi · N+2=reveal
+
+  // Fase 8 (v10) — state reveal R1
+  let revealParticleTimer = null;  // setInterval spawn spark reveal
+  let revealStampTimer = null;     // setTimeout stamp setelah flip selesai
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -587,6 +591,7 @@
     roundActive = false;
     soalStep = 0;
     if (window.gsap) gsap.killTweensOf([boardPanel, boardDim]);
+    clearSoalReveal();                // Fase 8 — buang glow/particle/stamp reveal
     stageEl.querySelectorAll(".soal-flyer").forEach((f) => f.remove());
     soalShowcaseEl.innerHTML = "";
     soalCardsEl.innerHTML = "";
@@ -741,7 +746,21 @@
       }
       return true;
     }
-    return false;                               // soalStep === N+1 → advance scene
+    if (soalStep === N + 1) {                    // Fase 8 — diskusi → REVEAL (kalau ada)
+      if (hasReveal(currentKey)) {
+        soalStep = N + 2;
+        doSoalReveal(true);
+        return true;
+      }
+      return false;                             // tak ada reveal → advance scene
+    }
+    return false;                               // soalStep === N+2 (reveal tampil) → advance
+  }
+
+  // Ronde punya tahap reveal? config-driven: hanya yg punya PANELS[key].reveal.
+  // Fase 8 → baru R1 yang punya (panel-r1-reveal.png); ronde lain reveal:null.
+  function hasReveal(key) {
+    return !!(typeof PANELS !== "undefined" && PANELS[key] && PANELS[key].reveal);
   }
 
   // ← di dalam ronde: snap mundur satu langkah (tanpa animasi).
@@ -749,6 +768,7 @@
     const N = roundCards.length;
     stageEl.querySelectorAll(".soal-flyer").forEach((f) => f.remove());
     soalShowcaseEl.innerHTML = "";
+    clearSoalReveal();                 // selalu bersihkan FX reveal dulu
     buildBandSkeleton();
     if (s <= 0) {
       setPanel(false, false);
@@ -758,11 +778,128 @@
       setDim("soft", false);
       for (let i = 0; i < s - 1; i++) settleBandSlot(i);
       showBigCard(s - 1, false);
-    } else {
+    } else {                           // N+1 (diskusi) atau N+2 (reveal)
       setPanel(true, false);
       setDim("none", false);
       for (let i = 0; i < N; i++) settleBandSlot(i);
+      if (s === N + 2) doSoalReveal(false);   // snap reveal (tanpa animasi)
     }
+  }
+
+  // ============================================================
+  // Fase 8 (v10) — SUB-STATE REVEAL (R1 saja untuk fase ini).
+  // Panel flip soal→reveal + glow/particle + stamp jawaban benar (dari config).
+  // ============================================================
+  const REVEAL_SFX  = "assets/audio/sfx/sfx-05-reveal.mp3";
+  const REVEAL_STING = "assets/audio/music/m04-reveal-sting.mp3";
+  const REVEAL_SPARK = "assets/img/shared/particle-goldspark.png";
+
+  // One-shot audio langsung (tidak menyentuh AudioEngine/manifest), hormati state.
+  function playOneShot(src, vol) {
+    console.log("SFX(reveal):", src);
+    if (!audioUnlocked || muted) return;
+    const a = new Audio(src);
+    a.volume = vol;
+    a.play().catch((e) => console.warn("audio blocked", e));
+  }
+
+  // Panel atas flip (flipX) soal→reveal; instan kalau animate=false.
+  function flipPanelTo(newSrc, animate) {
+    if (!animate || !window.gsap) { boardPanel.src = newSrc; return; }
+    gsap.killTweensOf(boardPanel);
+    const tl = gsap.timeline();
+    tl.to(boardPanel, { rotationY: 90, duration: 0.4, ease: "power2.in",
+        transformPerspective: 900, transformOrigin: "50% 50%" })
+      .add(() => { boardPanel.src = newSrc; })
+      .set(boardPanel, { rotationY: -90 })
+      .to(boardPanel, { rotationY: 0, duration: 0.4, ease: "power2.out" });
+  }
+
+  // Glow + particle emas di sekitar panel (atas-tengah).
+  function spawnRevealFx() {
+    const glow = document.createElement("img");
+    glow.className = "soal-reveal-glow"; glow.alt = ""; glow.src = FX.glow;
+    glow.onerror = () => glow.remove();
+    boardEl.appendChild(glow);
+
+    const wrap = document.createElement("div");
+    wrap.className = "soal-reveal-particles";
+    boardEl.appendChild(wrap);
+    const spawn = () => {
+      if (wrap.children.length >= 18) return;
+      const s = document.createElement("img");
+      s.className = "soal-reveal-spark"; s.alt = ""; s.src = REVEAL_SPARK;
+      s.onerror = () => s.remove();
+      const dur = 5 + Math.random() * 5;
+      s.style.left = (Math.random() * 100) + "%";
+      s.style.width = (10 + Math.random() * 18) + "px";
+      s.style.setProperty("--sp-rise", (260 + Math.random() * 320) + "px");
+      s.style.setProperty("--sp-drift", (Math.random() * 100 - 50) + "px");
+      s.style.setProperty("--sp-op", (0.5 + Math.random() * 0.5).toFixed(2));
+      s.style.animation = "sparkFloat " + dur.toFixed(2) + "s linear infinite";
+      wrap.appendChild(s);
+    };
+    for (let i = 0; i < 8; i++) spawn();
+    revealParticleTimer = setInterval(spawn, 480);
+  }
+
+  // Stamp CONFIRMED di kartu benar (dari ANSWERS) + redupkan kartu lain.
+  function applyAnswerStamp(animate) {
+    const ans = (typeof ANSWERS !== "undefined") ? ANSWERS[currentKey] : null;
+    const correct = (ans && ans.correct) ? ans.correct : [];
+    for (let i = 0; i < roundCards.length; i++) {
+      const slot = soalCardsEl.children[i];
+      if (!slot) continue;
+      if (correct.indexOf(i) !== -1) {
+        slot.classList.add("rv-correct");
+        const stamp = document.createElement("img");
+        stamp.className = "soal-stamp"; stamp.alt = ""; stamp.src = FX.stampOk;
+        stamp.onerror = () => stamp.remove();
+        slot.appendChild(stamp);
+        if (window.gsap && animate) {
+          gsap.fromTo(stamp,
+            { opacity: 0, scale: 1.6, rotation: -18, xPercent: -50, yPercent: -50 },
+            { opacity: 1, scale: 1, rotation: -8, xPercent: -50, yPercent: -50,
+              duration: 0.5, ease: "back.out(2)", transformOrigin: "50% 50%" });
+        }
+      } else {
+        slot.classList.add("rv-dim");
+      }
+    }
+  }
+
+  // Masuk REVEAL: flip panel → (saat flip selesai) glow/particle + sfx + stamp.
+  function doSoalReveal(animate) {
+    const key = currentKey;
+    if (!hasReveal(key)) return;
+    flipPanelTo(PANELS[key].reveal, animate);
+    if (animate) {
+      // Semua efek menyala SAAT FLIP SELESAI (~0.8s), bukan saat mulai.
+      revealStampTimer = setTimeout(() => {
+        spawnRevealFx();
+        playOneShot(REVEAL_SFX, SFX_VOL);
+        playOneShot(REVEAL_STING, 0.4);          // sting reveal (opsional, lebih pelan)
+        applyAnswerStamp(true);
+      }, 800);
+    } else {
+      spawnRevealFx();
+      applyAnswerStamp(false);
+    }
+  }
+
+  // Bersihkan FX reveal → panel balik ke soal, stamp & dim hilang. Aman selalu.
+  function clearSoalReveal() {
+    if (revealParticleTimer) { clearInterval(revealParticleTimer); revealParticleTimer = null; }
+    if (revealStampTimer) { clearTimeout(revealStampTimer); revealStampTimer = null; }
+    boardEl.querySelectorAll(".soal-reveal-glow, .soal-reveal-particles").forEach((e) => e.remove());
+    if (window.gsap) { gsap.killTweensOf(boardPanel); gsap.set(boardPanel, { rotationY: 0 }); }
+    if (currentKey && typeof PANELS !== "undefined" && PANELS[currentKey] && PANELS[currentKey].soal) {
+      boardPanel.src = PANELS[currentKey].soal;
+    }
+    soalCardsEl.querySelectorAll(".soal-slot").forEach((slot) => {
+      slot.classList.remove("rv-correct", "rv-dim");
+      slot.querySelectorAll(".soal-stamp").forEach((s) => s.remove());
+    });
   }
 
   // ---------- a) Scaling safe-area ----------

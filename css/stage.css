@@ -923,3 +923,56 @@ html, body {
   box-shadow: 0 0 44px rgba(201, 169, 97, 0.55), 0 12px 34px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+
+/* ---------- Fase 8 — Sub-state REVEAL (R1) ---------- */
+/* Diterapkan ke .soal-card (bukan .soal-slot) supaya tak bentrok animasi settle.
+   Kartu benar: naik sedikit + glow emas + flash. Kartu lain: redup + grayscale. */
+.soal-card {
+  transition: transform 0.45s cubic-bezier(.2,.9,.3,1.1),
+              opacity 0.45s ease, filter 0.45s ease,
+              box-shadow 0.45s ease, border-color 0.45s ease;
+}
+.soal-slot.rv-correct .soal-card {
+  transform: translateY(-18px) scale(1.05);
+  border-color: rgba(212, 175, 55, 0.95);
+  box-shadow: 0 0 46px rgba(212, 175, 55, 0.9), 0 0 92px rgba(212, 175, 55, 0.5);
+  animation: rvFlash 0.5s ease both;
+}
+@keyframes rvFlash {
+  0%   { filter: brightness(2.2); }
+  100% { filter: brightness(1); }
+}
+.soal-slot.rv-dim .soal-card { opacity: 0.4; filter: grayscale(0.85); }
+
+/* Stempel CONFIRMED di atas kartu benar (digerakkan GSAP) */
+.soal-stamp {
+  position: absolute; left: 50%; top: 46%;
+  width: 84%; height: auto;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  z-index: 4; pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+}
+
+/* Glow emas di sekitar panel saat reveal (atas-tengah, denyut) */
+.soal-reveal-glow {
+  position: absolute; left: 50%; top: 33%;
+  width: 1280px; max-width: 86%; height: auto;
+  transform: translate(-50%, -50%);
+  z-index: 1; pointer-events: none;
+  mix-blend-mode: screen;
+  animation: opGlowIn 0.8s ease forwards, opGlowPulse 4s ease-in-out 0.8s infinite;
+}
+
+/* Partikel goldspark di sekitar panel saat reveal */
+.soal-reveal-particles {
+  position: absolute; left: 50%; top: 0;
+  width: 1300px; max-width: 86%; height: 70%;
+  transform: translateX(-50%);
+  z-index: 1; pointer-events: none; overflow: hidden;
+}
+.soal-reveal-spark {
+  position: absolute; bottom: -30px;
+  width: 14px; height: auto; opacity: 0;
+  pointer-events: none; will-change: transform, opacity;
+  filter: drop-shadow(0 0 6px rgba(244, 215, 122, 0.7));
+}
