@@ -40,6 +40,14 @@
     spark:   "assets/img/shared/particle-goldspark.png"
   };
 
+  // Fase 3 (v10) — overlay closing title screen
+  const closingEl = document.getElementById("closing");
+  const clGlow = closingEl.querySelector(".cl-glow");
+  const clParticles = closingEl.querySelector(".cl-particles");
+  const clTitle = closingEl.querySelector(".cl-title");
+  const clSweep = closingEl.querySelector(".cl-sweep");
+  const CLOSING_SPARK = "assets/img/shared/particle-goldspark.png";
+
   // Poses Wizco per konteks (aset di assets/img/wizco/).
   const WIZCO_POSE = {
     opening: "assets/img/wizco/wizco-greeting.png",
@@ -58,6 +66,12 @@
   let openingSparkTimer = null;// setInterval spawn spark
   let openingBgTween = null;   // GSAP zoom bg-slot
   let openingBgSlot = null;    // slot bg yg di-zoom (untuk reset)
+
+  // Fase 3 (v10) — state closing
+  let closingActive = false;   // scene closing sedang tampil?
+  let closingSparkTimer = null;// setInterval spawn spark
+  let closingBgTween = null;   // GSAP zoom bg-slot
+  let closingBgSlot = null;    // slot bg yg di-zoom (untuk reset)
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -294,6 +308,100 @@
     }
   }
 
+  // ============================================================
+  // Fase 3 (v10) — CLOSING title screen (gaya konsisten dgn opening)
+  // Self-contained: hanya jalan saat scene "closing". Audio m09-closing
+  // ditangani engine musik; fanfare one-shot dipicu di enterClosing.
+  // ============================================================
+  function enterClosing() {
+    if (closingActive) return;
+    closingActive = true;
+    closingEl.classList.add("active");
+    clTitle.classList.remove("shown");
+    if (window.gsap) gsap.set(clSweep, { x: "-120%", opacity: 0 });
+    playClosingIntro();
+    startClosingSparks();
+    startClosingBgZoom();
+    playSfx("win");                     // one-shot fanfare (sfx-14)
+  }
+
+  function teardownClosing() {
+    if (!closingActive) { closingEl.classList.remove("active"); return; }
+    closingActive = false;
+    closingEl.classList.remove("active");
+    stopClosingSparks();
+    stopClosingBgZoom();
+    if (window.gsap) gsap.killTweensOf([clTitle, clSweep]);
+    clTitle.classList.remove("shown");
+  }
+
+  // Animasi MASUK: teks scale 0.9→1 + opacity 0→1 (power3.out ~1.1s) + sapuan cahaya.
+  function playClosingIntro() {
+    if (window.gsap) {
+      gsap.killTweensOf(clTitle);
+      gsap.fromTo(clTitle,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 1.1, ease: "power3.out",
+          transformOrigin: "50% 50%" });
+      gsap.fromTo(clSweep,
+        { x: "-120%", opacity: 0 },
+        { x: "120%", opacity: 1, duration: 0.9, ease: "power2.out", delay: 0.25,
+          onComplete: () => gsap.set(clSweep, { opacity: 0 }) });
+    } else {
+      clTitle.classList.add("shown");
+    }
+  }
+
+  // Zoom/parallax bg SANGAT halus (loop yoyo) di slot bg yg sedang show.
+  function startClosingBgZoom() {
+    if (!window.gsap) return;
+    requestAnimationFrame(() => {
+      if (!closingActive) return;
+      closingBgSlot = document.querySelector(".bg-slot.show") || closingBgSlot;
+      if (!closingBgSlot) return;
+      gsap.killTweensOf(closingBgSlot);
+      gsap.set(closingBgSlot, { transformOrigin: "50% 50%" });
+      closingBgTween = gsap.fromTo(closingBgSlot,
+        { scale: 1, yPercent: 0 },
+        { scale: 1.07, yPercent: -1.5, duration: 22, ease: "sine.inOut",
+          repeat: -1, yoyo: true });
+    });
+  }
+  function stopClosingBgZoom() {
+    if (closingBgTween) { closingBgTween.kill(); closingBgTween = null; }
+    if (closingBgSlot && window.gsap) gsap.set(closingBgSlot, { clearProps: "transform" });
+    closingBgSlot = null;
+  }
+
+  // Partikel goldspark ambient (spawn bertahap, loop CSS, di-cap jumlahnya).
+  function startClosingSparks() {
+    stopClosingSparks();
+    for (let i = 0; i < 10; i++) spawnClosingSpark(true);
+    closingSparkTimer = setInterval(() => {
+      if (closingActive && clParticles.children.length < 22) spawnClosingSpark(false);
+    }, 520);
+  }
+  function stopClosingSparks() {
+    if (closingSparkTimer) { clearInterval(closingSparkTimer); closingSparkTimer = null; }
+    clParticles.innerHTML = "";
+  }
+  function spawnClosingSpark(immediate) {
+    const s = document.createElement("img");
+    s.className = "cl-spark"; s.alt = "";
+    s.src = CLOSING_SPARK;
+    s.onerror = () => s.remove();
+    const size = 10 + Math.random() * 22;
+    const dur = 6 + Math.random() * 6;
+    const delay = immediate ? -(Math.random() * dur) : 0;
+    s.style.left = (Math.random() * 100) + "%";
+    s.style.width = size + "px";
+    s.style.setProperty("--sp-rise", (480 + Math.random() * 520) + "px");
+    s.style.setProperty("--sp-drift", (Math.random() * 120 - 60) + "px");
+    s.style.setProperty("--sp-op", (0.5 + Math.random() * 0.5).toFixed(2));
+    s.style.animation = "sparkFloat " + dur.toFixed(2) + "s linear " + delay.toFixed(2) + "s infinite";
+    clParticles.appendChild(s);
+  }
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -369,11 +477,13 @@
   // Panel & wizco tampil hanya di scene "bg" yang punya data ROUNDS.
   // Scene "transition" → semua disembunyikan (cuma gambar romawi).
   function renderOverlay(item) {
-    // Fase 2 (v10) — opening punya cinematic sendiri (tanpa panel biru lama).
+    // Fase 2/3 (v10) — opening & closing punya cinematic sendiri (tanpa panel biru).
     const isOpening = item.type === "bg" && item.key === "opening";
+    const isClosing = item.type === "bg" && item.key === "closing";
     if (isOpening) enterOpening(); else teardownOpening();
+    if (isClosing) enterClosing(); else teardownClosing();
 
-    const round = (item.type === "bg" && !isOpening) ? ROUNDS[item.key] : null;
+    const round = (item.type === "bg" && !isOpening && !isClosing) ? ROUNDS[item.key] : null;
 
     // --- Panel soal ---
     if (round) {
@@ -814,6 +924,7 @@
       if (step < revealStep) { goToStep(step + 1, +1); return; }
     }
     if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
+    else showScene(0);   // Fase 3 (v10) — scene terakhir (closing) → loop balik ke opening
   }
   // ← : mundur sub-fase kartu dulu; kalau sudah di SCENARIO → scene sebelumnya.
   function prev() {
@@ -898,6 +1009,12 @@
     window.addEventListener("resize", resizeStage);
     window.addEventListener("keydown", onKeydown);
     window.addEventListener("click", unlockAudio);   // Fase C3 — unlock via klik juga
+    // Helper test (DevTools): gotoScene(index) atau gotoScene('closing').
+    // Murni untuk debug — tidak mengubah perilaku navigasi keyboard.
+    window.gotoScene = function (i) {
+      if (typeof i === "string") i = SCENES.findIndex((s) => s.key === i && s.type === "bg");
+      if (i >= 0) showScene(i);
+    };
     preload();
   }
 

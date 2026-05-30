@@ -605,3 +605,115 @@ html, body {
     transparent 60%
   );
 }
+
+/* ============================================================
+   FASE 3 (v10) — CLOSING title screen
+   Konsisten dgn opening (glow + spark + title tengah). Panel biru lama
+   disembunyikan untuk closing (JS). Reuse keyframes opening (generik).
+   ============================================================ */
+#closing {
+  position: absolute; inset: 0;
+  z-index: 8;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+}
+#closing.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Glow emas berdenyut (reuse keyframes opGlowIn/opGlowPulse) --- */
+.cl-glow {
+  position: absolute; left: 50%; top: 50%;
+  width: 1500px; max-width: 90%; height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  z-index: 1; pointer-events: none;
+  mix-blend-mode: screen;
+}
+#closing.active .cl-glow {
+  animation: opGlowIn 1.4s ease forwards,
+             opGlowPulse 4.4s ease-in-out 1.4s infinite;
+}
+
+/* --- Partikel goldspark ambient (JS spawn; reuse keyframe sparkFloat) --- */
+.cl-particles {
+  position: absolute; inset: 0;
+  z-index: 2; pointer-events: none;
+}
+.cl-spark {
+  position: absolute; bottom: -40px;
+  width: 16px; height: auto;
+  opacity: 0; pointer-events: none;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 6px rgba(244, 215, 122, 0.7));
+}
+
+/* --- Title tengah (flex item, tanpa transform centering → aman GSAP scale) --- */
+.cl-title {
+  position: relative; z-index: 4;
+  text-align: center; pointer-events: none;
+  opacity: 0;
+  transform-origin: 50% 50%;
+}
+.cl-title.shown { opacity: 1; }      /* fallback non-GSAP */
+
+.cl-sub {
+  font-family: 'Cinzel', Georgia, serif;
+  font-style: italic;
+  font-size: 36px; letter-spacing: 9px; text-transform: uppercase;
+  color: #D4AF37; margin-bottom: 26px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* Baris judul + ikon flank kiri/kanan */
+.cl-headline {
+  display: flex; align-items: center; justify-content: center;
+  gap: 48px;
+}
+.cl-maintitle {
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 118px; letter-spacing: 6px; line-height: 1.02;
+  color: #F4D77A;
+  text-shadow: 0 0 30px rgba(244, 215, 122, 0.55),
+               0 0 78px rgba(212, 175, 55, 0.42),
+               0 4px 18px rgba(0, 0, 0, 0.6);
+}
+.cl-flank {
+  height: 132px; width: auto; flex: none;
+  filter: drop-shadow(0 0 22px rgba(244, 215, 122, 0.65));
+  animation: clFlankGlow 3.6s ease-in-out infinite;
+}
+@keyframes clFlankGlow {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(244, 215, 122, 0.5)); }
+  50%      { filter: drop-shadow(0 0 34px rgba(244, 215, 122, 0.85)); }
+}
+
+.cl-caption {
+  margin-top: 30px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 34px; letter-spacing: 4px;
+  color: #F4E8C8;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+.cl-divider {
+  display: block; height: 28px; width: auto; max-width: 540px;
+  margin: 24px auto 0; opacity: 0.9;
+}
+
+/* --- Sapuan cahaya saat MASUK (digerakkan GSAP; default invisible) --- */
+.cl-sweep {
+  position: absolute; inset: 0; z-index: 6;
+  pointer-events: none; opacity: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 245, 210, 0.0) 46%,
+    rgba(255, 245, 210, 0.55) 50%,
+    rgba(255, 245, 210, 0.0) 54%,
+    transparent 60%
+  );
+}
