@@ -18,8 +18,24 @@
   <!-- Vignette sinematik (coded, bukan gambar) -->
   <div id="vignette"></div>
 
-  <!-- Safe-area 1920x1080, di-scale via JS. Kosong di Fase A. -->
-  <div id="stage"></div>
+  <!-- Safe-area 1920x1080, di-scale via JS. Fase B: panel + timer + wizco. -->
+  <div id="stage">
+    <!-- Maskot Wizco (kiri-bawah) -->
+    <img id="wizco" alt="" />
+
+    <!-- Timer emas (kanan-atas) -->
+    <div id="timer">00:00</div>
+
+    <!-- Panel soal (tengah-bawah) -->
+    <div id="panel">
+      <img class="panel-crest" src="assets/img/ui/ornament-crest-top.png" alt="" />
+      <div class="panel-sub"></div>
+      <h1 class="panel-title"></h1>
+      <img class="panel-divider" src="assets/img/ui/ornament-divider.png" alt="" />
+      <p class="panel-scenario"></p>
+      <div class="panel-meta"></div>
+    </div>
+  </div>
 
   <!-- Loading screen saat preload aset -->
   <div id="loading-screen">
