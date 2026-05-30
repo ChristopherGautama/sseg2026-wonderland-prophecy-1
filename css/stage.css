@@ -225,36 +225,50 @@ html, body {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- Timer emas (kanan-atas) ---------- */
+/* ---------- Timer emas (kanan-atas) — Fase 6 ----------
+   Glow ganda emas terang. Animasi pakai TEXT-SHADOW saja (bukan transform),
+   supaya "tick" per-detik (GSAP scale) tidak bentrok. */
 #timer {
   position: absolute;
   top: 44px;
   right: 64px;
-  font-size: 78px;
+  font-size: 84px;
   font-weight: 700;
   letter-spacing: 3px;
-  color: #C9A961;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7),
-               0 0 18px rgba(201, 169, 97, 0.45);
+  color: #F4D77A;
+  text-shadow: 0 0 18px rgba(244, 215, 122, 0.8),
+               0 0 48px rgba(201, 169, 97, 0.5),
+               0 3px 6px rgba(0, 0, 0, 0.7);
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
   font-variant-numeric: tabular-nums;
+  transform-origin: 100% 50%;     /* tumbuh ke kiri saat tick (jauh dari tepi) */
 }
 
-/* 10 detik terakhir: tetap emas, glow berdenyut makin kuat */
-#timer.timer-urgent {
-  animation: timerPulse 1s ease-in-out infinite;
+/* Berjalan (normal): glow berdenyut HALUS */
+#timer.is-running:not(.timer-urgent) {
+  animation: timerGlow 2.4s ease-in-out infinite;
+}
+@keyframes timerGlow {
+  0%, 100% { text-shadow: 0 0 18px rgba(244, 215, 122, 0.8),
+                          0 0 48px rgba(201, 169, 97, 0.5),
+                          0 3px 6px rgba(0, 0, 0, 0.7); }
+  50%      { text-shadow: 0 0 28px rgba(244, 215, 122, 1),
+                          0 0 66px rgba(201, 169, 97, 0.72),
+                          0 3px 6px rgba(0, 0, 0, 0.7); }
 }
 
-@keyframes timerPulse {
-  0%, 100% {
-    transform: scale(1);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7),
-                 0 0 20px rgba(201, 169, 97, 0.55);
-  }
-  50% {
-    transform: scale(1.12);
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7),
-                 0 0 40px rgba(212, 175, 55, 0.95);
-  }
+/* 10 detik terakhir: MERAH (selalu); denyut cepat & kuat hanya saat berjalan */
+#timer.timer-urgent { color: #C0392B; }
+#timer.is-running.timer-urgent {
+  animation: timerUrgent 0.7s ease-in-out infinite;
+}
+@keyframes timerUrgent {
+  0%, 100% { text-shadow: 0 0 18px rgba(192, 57, 43, 0.85),
+                          0 0 50px rgba(192, 57, 43, 0.5),
+                          0 3px 6px rgba(0, 0, 0, 0.7); }
+  50%      { text-shadow: 0 0 36px rgba(231, 76, 60, 1),
+                          0 0 84px rgba(192, 57, 43, 0.85),
+                          0 3px 6px rgba(0, 0, 0, 0.7); }
 }
 
 /* ---------- Wizco (kiri-bawah area aman) ---------- */

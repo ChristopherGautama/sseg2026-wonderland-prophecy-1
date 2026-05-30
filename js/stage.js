@@ -1196,10 +1196,29 @@
     timerEl.classList.toggle("timer-urgent", timerRemaining <= 10 && timerRemaining > 0);
   }
 
+  // Fase 6 — heartbeat 10 detik terakhir (di luar manifest; 404-safe via playOneShot).
+  const HEARTBEAT_SFX = "assets/audio/sfx/sfx-18-heartbeat.mp3";
+
+  // Denyut kecil per detik (GSAP scale; lebih kuat saat urgent). Tak ganggu glow CSS.
+  function timerTickPulse() {
+    if (!window.gsap) return;
+    const urgent = timerRemaining <= 10 && timerRemaining > 0;
+    gsap.fromTo(timerEl, { scale: 1 },
+      { scale: urgent ? 1.09 : 1.04, duration: urgent ? 0.1 : 0.08,
+        yoyo: true, repeat: 1, ease: "power1.out", transformOrigin: "100% 50%" });
+  }
+  // Flash kecil saat 00:00.
+  function timerEndFlash() {
+    if (!window.gsap) return;
+    gsap.fromTo(timerEl, { scale: 1.18 },
+      { scale: 1, duration: 0.5, ease: "power2.out", transformOrigin: "100% 50%" });
+  }
+
   // Siapkan timer untuk scene aktif (DIAM, belum jalan). null = sembunyikan.
   function setupTimer(key) {
     if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
     timerRunning = false;
+    timerEl.classList.remove("is-running");          // Fase 6 — reset visual "berjalan"
     if (key && TIMER_SECONDS[key] != null) {
       timerKey = key;
       timerRemaining = TIMER_SECONDS[key];
@@ -1216,11 +1235,16 @@
     if (timerRemaining > 0) {
       timerRemaining--;
       renderTimerFace();
-      if (timerRemaining > 0 && timerRemaining <= 10) playSfx("timerTick"); // hitung mundur
+      timerTickPulse();                                                     // Fase 6 — denyut per detik
+      if (timerRemaining > 0 && timerRemaining <= 10) {
+        playOneShot(HEARTBEAT_SFX, SFX_VOL);                               // 10 detik terakhir: heartbeat
+      }
       if (timerRemaining === 0) {
         timerRunning = false;
+        timerEl.classList.remove("is-running");
         if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
         playSfx("timerEnd");                                                // 00:00
+        timerEndFlash();                                                    // sedikit flash
       }
     }
   }
@@ -1230,13 +1254,26 @@
     if (timerKey == null || timerRemaining <= 0) return;
     if (timerRunning) {
       timerRunning = false;
+      timerEl.classList.remove("is-running");                            // Fase 6 — pause: glow tenang
       if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
     } else {
       timerRunning = true;
+      timerEl.classList.add("is-running");                               // Fase 6 — glow berdenyut
       if (timerHandle) clearInterval(timerHandle);
       timerHandle = setInterval(tickTimer, 1000);
       playSfx("timerStart");                                               // Fase C3
     }
+  }
+
+  // Fase 6 — Tombol R (di ronde): reset timer ke waktu penuh ronde (dari config).
+  // Pertahankan reset-per-ronde otomatis (setupTimer) — ini reset manual.
+  function resetTimer() {
+    if (timerKey == null || TIMER_SECONDS[timerKey] == null) return;
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+    timerRunning = false;
+    timerEl.classList.remove("is-running");
+    timerRemaining = TIMER_SECONDS[timerKey];
+    renderTimerFace();
   }
 
   // ============================================================
@@ -1624,7 +1661,7 @@
       "<h2>Bantuan Kontrol</h2>" +
       "<div>Space / → &nbsp; Maju: kartu → DISCUSS → REVEAL → scene berikutnya</div>" +
       "<div>← &nbsp; Mundur: sub-fase kartu / batal reveal lalu scene sebelumnya</div>" +
-      "<div>R &nbsp; Reset ke awal</div>" +
+      "<div>R &nbsp; Reset timer (di ronde) · reset ke awal (di luar ronde)</div>" +
       "<div>T &nbsp; Mulai / jeda timer</div>" +
       "<div>F &nbsp; Fullscreen</div>" +
       "<div>M &nbsp; Mute / unmute</div>" +
@@ -1645,7 +1682,9 @@
         break;
       case "r":
       case "R":
-        reset();
+        // Fase 6 — di ronde (ada timer): reset timer ke waktu penuh.
+        // Di luar ronde (tak ada timer): reset ke awal (perilaku lama).
+        if (timerKey != null) resetTimer(); else reset();
         break;
       case "f":
       case "F":
