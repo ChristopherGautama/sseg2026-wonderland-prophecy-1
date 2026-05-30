@@ -62,3 +62,23 @@ const ROUNDS = {
 
 // Durasi diskusi per ronde (detik) — dipakai timer emas fase DISCUSS.
 const TIMER_SECONDS = { r1:90, r2:90, r3:90, r4:150, r5:150, r6:150, r7:150, r8:150, r9:210, bonus:120 };
+
+// ============================================================
+// FASE C1 — Daftar kartu pilihan per ronde.
+// Urut PERSIS sesuai opsi A,B,C,(D…) → dipasangkan dgn CARD_BADGES.
+// Hanya scene "bg" ronde (r1–r9 + bonus) yang punya kartu.
+// Opening / Closing / Transition TIDAK ada di sini → tanpa kartu.
+// ============================================================
+const CARDS = {
+  r1: [ "assets/img/cards/prediction/r1-continuation-down.png", "assets/img/cards/prediction/r1-double-bottom.png", "assets/img/cards/prediction/r1-sideways.png" ],
+  r2: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png" ],
+  r3: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png" ],
+  r4: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/grin-asset-card.png" ],
+  r5: [ "assets/img/cards/defensive/gold.png", "assets/img/cards/defensive/cash.png", "assets/img/cards/defensive/gov-bond.png", "assets/img/cards/defensive/deposito.png", "assets/img/cards/defensive/bitcoin.png", "assets/img/cards/defensive/saham-index.png" ],
+  r6: [ "assets/img/cards/universe/cstr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/lumn-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png" ],
+  r7: [ "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/grin-asset-card.png", "assets/img/cards/universe/taro-asset-card.png" ],
+  r8: [ "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/grin-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png" ],
+  r9: [ "assets/img/cards/ipo/hnpr-ipo-card.png", "assets/img/cards/ipo/mrrt-ipo-card.png", "assets/img/cards/ipo/lrbk-ipo-card.png", "assets/img/cards/ipo/evrg-ipo-card.png" ],
+  bonus: [ "assets/img/cards/bonus/qull-bonus-card.png", "assets/img/cards/bonus/noct-bonus-card.png", "assets/img/cards/bonus/spyr-bonus-card.png", "assets/img/cards/bonus/prpr-bonus-card.png", "assets/img/cards/bonus/skip-card.png" ]
+};
+const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan

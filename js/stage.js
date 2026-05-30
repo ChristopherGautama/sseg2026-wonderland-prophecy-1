@@ -24,6 +24,10 @@
   const timerEl = document.getElementById("timer");
   const wizcoEl = document.getElementById("wizco");
 
+  // Fase C1 — layer kartu
+  const showcaseEl = document.getElementById("card-showcase");
+  const slotsEl = document.getElementById("card-slots");
+
   // Poses Wizco per konteks (aset di assets/img/wizco/).
   const WIZCO_POSE = {
     opening: "assets/img/wizco/wizco-greeting.png",
@@ -42,6 +46,10 @@
   let timerRunning = false;  // sedang berjalan?
   let timerHandle = null;    // setInterval handle
 
+  // Fase C1 — state sub-fase kartu (operator-paced lewat Space/←)
+  let roundCards = [];       // array path kartu scene aktif ([] = scene tanpa kartu)
+  let step = 0;              // 0=SCENARIO · 1..2N=showcase/slot · 2N+1=DISCUSS
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -56,6 +64,10 @@
     const paths = [];
     Object.values(ASSETS.bg).forEach((p) => paths.push(p));
     Object.values(ASSETS.transition).forEach((p) => paths.push(p));
+    // Fase C1 — preload juga semua kartu (dedup; 404 hanya console.warn)
+    if (typeof CARDS !== "undefined") {
+      Object.values(CARDS).forEach((arr) => arr.forEach((p) => paths.push(p)));
+    }
     const unique = Array.from(new Set(paths));
 
     const total = unique.length;
@@ -104,6 +116,7 @@
     sceneLabel.textContent = (i + 1) + "/" + SCENES.length + " · " + item.name;
 
     renderOverlay(item);   // Fase B — panel + timer + wizco
+    enterScene(item);      // Fase C1 — reset sub-fase kartu ke fase 0
   }
 
   // ---------- Fase B) Overlay konten per scene ----------
@@ -209,9 +222,169 @@
     }
   }
 
+  // ============================================================
+  // Fase C1 — Engine kartu (showcase besar → slot kecil)
+  // ============================================================
+
+  // State visual untuk sebuah step (N = jumlah kartu):
+  //   slotted = berapa kartu sudah duduk di slot
+  //   big     = index kartu yang sedang BESAR di showcase (-1 = tidak ada)
+  //   discuss = true saat fase DISCUSS
+  function cardStateForStep(s, N) {
+    if (s <= 0) return { slotted: 0, big: -1, discuss: false };          // SCENARIO
+    if (s >= 2 * N + 1) return { slotted: N, big: -1, discuss: true };   // DISCUSS
+    if (s % 2 === 1) {                       // step ganjil → kartu BESAR
+      const i = (s - 1) / 2;
+      return { slotted: i, big: i, discuss: false };
+    }
+    const i = (s - 2) / 2;                   // step genap → kartu baru saja ke slot
+    return { slotted: i + 1, big: -1, discuss: false };
+  }
+
+  function applyCardsMode(on) { panelEl.classList.toggle("compact", on); }
+  function applyDiscussMode(on) { stageEl.classList.toggle("discuss", on); }
+
+  // Reset layer kartu setiap masuk scene. Scene non-ronde → kartu kosong.
+  function enterScene(item) {
+    step = 0;
+    roundCards = (item.type === "bg" && typeof CARDS !== "undefined" && CARDS[item.key])
+      ? CARDS[item.key] : [];
+    showcaseEl.innerHTML = "";
+    buildSlotsSkeleton();          // semua slot pending (invisible) → layout stabil
+    applyCardsMode(false);
+    applyDiscussMode(false);
+  }
+
+  // Skeleton: semua slot dibuat duluan (hidden) supaya posisi tak bergeser.
+  function buildSlotsSkeleton() {
+    slotsEl.innerHTML = "";
+    slotsEl.dataset.count = roundCards.length;
+    roundCards.forEach((path, i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "card-slot";
+      const img = document.createElement("img");
+      img.className = "slot-card";
+      img.src = path;
+      img.onerror = () => console.warn("Kartu gagal dimuat:", path);
+      const badge = document.createElement("div");
+      badge.className = "card-badge";
+      badge.textContent = CARD_BADGES[i] || (i + 1);
+      wrap.appendChild(img);
+      wrap.appendChild(badge);
+      slotsEl.appendChild(wrap);
+    });
+  }
+
+  function settleSlot(i) {
+    const slot = slotsEl.children[i];
+    if (slot) { slot.classList.remove("pending"); slot.classList.add("settled"); }
+  }
+
+  // Tampilkan kartu BESAR di showcase (animasi grow via CSS .showcase-card).
+  function showBig(i) {
+    showcaseEl.innerHTML = "";
+    const img = document.createElement("img");
+    img.className = "showcase-card";
+    img.src = roundCards[i];
+    img.onerror = () => console.warn("Kartu gagal dimuat:", roundCards[i]);
+    showcaseEl.appendChild(img);
+  }
+
+  // Rect elemen dalam koordinat #stage (1920x1080), kompensasi scale JS.
+  function rectInStage(el) {
+    const sr = stageEl.getBoundingClientRect();
+    const scale = sr.width / CONFIG.canvasW;
+    const r = el.getBoundingClientRect();
+    return {
+      left: (r.left - sr.left) / scale,
+      top: (r.top - sr.top) / scale,
+      width: r.width / scale,
+      height: r.height / scale
+    };
+  }
+  function setRect(el, r) {
+    el.style.left = r.left + "px";
+    el.style.top = r.top + "px";
+    el.style.width = r.width + "px";
+    el.style.height = r.height + "px";
+  }
+
+  // Kartu besar MENGECIL + meluncur ke slot-nya (FLIP). Pakai GSAP bila ada.
+  function flyBigToSlot(i) {
+    const bigEl = showcaseEl.querySelector(".showcase-card");
+    const slot = slotsEl.children[i];
+    const slotImg = slot ? slot.querySelector(".slot-card") : null;
+    if (!slotImg) { settleSlot(i); showcaseEl.innerHTML = ""; return; }
+
+    const to = rectInStage(slotImg);
+    const from = bigEl ? rectInStage(bigEl) : to;
+
+    const flyer = document.createElement("img");
+    flyer.className = "card-flyer";
+    flyer.src = roundCards[i];
+    setRect(flyer, from);
+    stageEl.appendChild(flyer);
+    showcaseEl.innerHTML = "";   // kartu besar digantikan flyer
+
+    const finish = () => { flyer.remove(); settleSlot(i); };
+    if (window.gsap) {
+      gsap.to(flyer, {
+        left: to.left, top: to.top, width: to.width, height: to.height,
+        duration: 0.62, ease: "power2.inOut", onComplete: finish
+      });
+    } else {
+      flyer.style.transition = "left .62s ease, top .62s ease, width .62s ease, height .62s ease";
+      requestAnimationFrame(() => setRect(flyer, to));
+      setTimeout(finish, 660);
+    }
+  }
+
+  // Mundur / loncat: bangun ulang layer langsung ke state target (tanpa animasi).
+  function rebuildInstant(state) {
+    // bersihkan flyer yang mungkin masih nyangkut
+    stageEl.querySelectorAll(".card-flyer").forEach((f) => f.remove());
+    showcaseEl.innerHTML = "";
+    buildSlotsSkeleton();
+    for (let i = 0; i < state.slotted; i++) settleSlot(i);
+    if (state.big >= 0) showBig(state.big);
+    applyCardsMode(step >= 1);
+    applyDiscussMode(state.discuss);
+  }
+
+  // Pindah satu sub-step. dir +1 = maju (animasi), -1 = mundur (snap).
+  function goToStep(newStep, dir) {
+    const N = roundCards.length;
+    const prev = cardStateForStep(step, N);
+    const nextS = cardStateForStep(newStep, N);
+    step = newStep;
+
+    if (dir > 0) {
+      if (nextS.big >= 0 && prev.big < 0) {          // kartu baru muncul BESAR
+        applyCardsMode(true);
+        showBig(nextS.big);
+      } else if (nextS.big < 0 && prev.big >= 0 && nextS.slotted > prev.slotted) {
+        flyBigToSlot(prev.big);                       // kartu besar → slot
+      }
+      applyDiscussMode(nextS.discuss);                // step terakhir → DISCUSS
+    } else {
+      rebuildInstant(nextS);                          // mundur: snap ke state
+    }
+  }
+
   // ---------- d) Navigasi ----------
-  function next() { if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1); }
-  function prev() { if (currentIndex > 0) showScene(currentIndex - 1); }
+  // Space/→ : maju sub-fase kartu dulu; kalau sudah DISCUSS → scene berikutnya.
+  function next() {
+    if (roundCards.length) {
+      const maxStep = 2 * roundCards.length + 1;
+      if (step < maxStep) { goToStep(step + 1, +1); return; }
+    }
+    if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
+  }
+  // ← : mundur sub-fase kartu dulu; kalau sudah di SCENARIO → scene sebelumnya.
+  function prev() {
+    if (roundCards.length && step > 0) { goToStep(step - 1, -1); return; }
+    if (currentIndex > 0) showScene(currentIndex - 1);
+  }
   function reset() { showScene(0); }
 
   // ---------- Fullscreen ----------
@@ -237,8 +410,8 @@
   function fillHelp() {
     helpOverlay.innerHTML =
       "<h2>Bantuan Kontrol</h2>" +
-      "<div>Space / → &nbsp; Maju ke scene berikutnya</div>" +
-      "<div>← &nbsp; Mundur ke scene sebelumnya</div>" +
+      "<div>Space / → &nbsp; Maju: kartu (besar→slot) lalu scene berikutnya</div>" +
+      "<div>← &nbsp; Mundur: sub-fase kartu lalu scene sebelumnya</div>" +
       "<div>R &nbsp; Reset ke awal</div>" +
       "<div>T &nbsp; Mulai / jeda timer</div>" +
       "<div>F &nbsp; Fullscreen</div>" +
