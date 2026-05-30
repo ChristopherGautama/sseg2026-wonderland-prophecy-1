@@ -103,3 +103,29 @@ const ANSWERS = {
   r9: { type:"alloc", results:[ {i:3,delta:"+100"},{i:0,delta:"+50"},{i:2,delta:"+5"},{i:1,delta:"-60"} ], note:"EVRG juara; HNPR kuat; MRRT jeblok." },
   bonus: { type:"multi", correct:[0,1], trap:[2,3], note:"QULL atau NOCT bertahan. (SKIP = aman, tak untung-rugi.)" }
 };
+
+// ============================================================
+// FASE C3 — Manifest AUDIO (path PERSIS sesuai file di folder).
+// music: 1 track loop per "babak". sfx: efek pendek (overlap via clone).
+// Volume target diatur di engine: musik 0.5 · sfx 0.85.
+// ============================================================
+const AUDIO = {
+  music: {
+    opening:  "assets/audio/music/m01-opening.mp3",
+    briefing: "assets/audio/music/m02-briefing-loop.mp3", // loop · babak R1–R6 (+ transisinya)
+    peak:     "assets/audio/music/m08-r7-ipo-peak.mp3",   // loop · babak R7–R9
+    tension:  "assets/audio/music/m07-bonus-urgent.mp3",  // loop · Bonus
+    closing:  "assets/audio/music/m09-closing.mp3"
+  },
+  sfx: {
+    scene:         "assets/audio/sfx/sfx-16-transition.mp3", // whoosh ganti scene
+    cardShow:      "assets/audio/sfx/sfx-17-sparkle.mp3",    // kartu muncul BESAR
+    cardSlot:      "assets/audio/sfx/sfx-08-chips.mp3",      // kartu mendarat di slot
+    timerStart:    "assets/audio/sfx/sfx-02-submit.mp3",     // timer mulai
+    timerTick:     "assets/audio/sfx/sfx-03-tick.mp3",       // detik terakhir (≤10s)
+    timerEnd:      "assets/audio/sfx/sfx-04-timeup.mp3",     // 00:00
+    revealConfirm: "assets/audio/sfx/sfx-06-correct.mp3",    // kartu benar (CONFIRMED)
+    revealRedFlag: "assets/audio/sfx/sfx-07-wrong.mp3",      // kartu trap (RED FLAG)
+    win:           "assets/audio/sfx/sfx-14-fanfare.mp3"     // juara alloc
+  }
+};

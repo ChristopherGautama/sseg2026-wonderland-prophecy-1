@@ -56,6 +56,74 @@
   let revealNoteEl = null;   // banner headline note (dibuat saat init)
   let revealTimers = [];     // setTimeout id utk stagger (dibersihkan saat clear)
 
+  // ============================================================
+  // Fase C3 — Audio engine (musik babak loop + SFX overlap), offline.
+  // Browser blokir audio sebelum interaksi → unlock pada keydown/klik pertama.
+  // ============================================================
+  const MUSIC_VOL = 0.5;
+  const SFX_VOL = 0.85;
+
+  let audioUnlocked = false;   // true setelah interaksi pertama
+  let musicEl = null;          // <audio> babak yg sedang loop (single track)
+  let desiredMusicSrc = null;  // track yg diinginkan scene aktif
+  const sfxTemplates = {};     // key -> Audio template (di-clone biar overlap)
+
+  // Preload semua SFX (tidak menggating loading screen).
+  function preloadSfx() {
+    if (typeof AUDIO === "undefined") { console.warn("AUDIO manifest tak ada"); return; }
+    Object.keys(AUDIO.sfx).forEach((key) => {
+      const a = new Audio(AUDIO.sfx[key]);
+      a.preload = "auto";
+      a.addEventListener("error", () => console.warn("SFX gagal load:", AUDIO.sfx[key]));
+      sfxTemplates[key] = a;
+    });
+  }
+
+  // Mainkan SFX (clone → bisa overlap). Selalu console.log (debug sementara).
+  function playSfx(key) {
+    const src = (typeof AUDIO !== "undefined" && AUDIO.sfx[key]) ? AUDIO.sfx[key] : null;
+    if (!src) { console.warn("SFX key tak dikenal:", key); return; }
+    console.log("SFX:", key, src);
+    if (!audioUnlocked || muted) return;            // belum unlock / muted → diam (tetap log)
+    const tpl = sfxTemplates[key];
+    const node = tpl ? tpl.cloneNode(true) : new Audio(src);
+    node.volume = SFX_VOL;
+    node.play().catch((e) => console.warn("audio blocked", e));
+  }
+
+  // Track musik per key scene. Transition pakai key ronde yg sama (r1..r9/bonus)
+  // → musik babak menyambung mulus dari transition ke ronde-nya.
+  function musicTrackForKey(key) {
+    if (typeof AUDIO === "undefined") return null;
+    if (key === "opening") return AUDIO.music.opening;
+    if (key === "closing") return AUDIO.music.closing;
+    if (key === "bonus")   return AUDIO.music.tension;
+    if (key === "r7" || key === "r8" || key === "r9") return AUDIO.music.peak;
+    return AUDIO.music.briefing;                    // r1–r6 (+ transisinya)
+  }
+
+  // Set musik scene aktif. Track sama → tidak restart (seamless antar scene).
+  function setSceneMusic(src) {
+    if (src === desiredMusicSrc && musicEl) return;
+    desiredMusicSrc = src;
+    if (musicEl) { musicEl.pause(); musicEl = null; }
+    if (!src) return;
+    const a = new Audio(src);
+    a.loop = true;
+    a.volume = muted ? 0 : MUSIC_VOL;
+    a.addEventListener("error", () => console.warn("Music gagal load:", src));
+    musicEl = a;
+    if (audioUnlocked) a.play().catch((e) => console.warn("audio blocked", e));
+  }
+
+  // Unlock pada interaksi pertama → langsung mainkan musik babak scene aktif.
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    console.log("AUDIO UNLOCKED, playing:", desiredMusicSrc);
+    if (musicEl) musicEl.play().catch((e) => console.warn("audio blocked", e));
+  }
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -121,6 +189,8 @@
 
     sceneLabel.textContent = (i + 1) + "/" + SCENES.length + " · " + item.name;
 
+    playSfx("scene");                            // Fase C3 — whoosh transisi
+    setSceneMusic(musicTrackForKey(item.key));   // Fase C3 — musik babak (seamless)
     renderOverlay(item);   // Fase B — panel + timer + wizco
     enterScene(item);      // Fase C1 — reset sub-fase kartu ke fase 0
   }
@@ -207,10 +277,11 @@
     if (timerRemaining > 0) {
       timerRemaining--;
       renderTimerFace();
+      if (timerRemaining > 0 && timerRemaining <= 10) playSfx("timerTick"); // hitung mundur
       if (timerRemaining === 0) {
         timerRunning = false;
         if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-        // (SFX 00:00 ditambah fase audio)
+        playSfx("timerEnd");                                                // 00:00
       }
     }
   }
@@ -225,6 +296,7 @@
       timerRunning = true;
       if (timerHandle) clearInterval(timerHandle);
       timerHandle = setInterval(tickTimer, 1000);
+      playSfx("timerStart");                                               // Fase C3
     }
   }
 
@@ -376,7 +448,9 @@
       if (nextS.big >= 0 && prev.big < 0) {          // kartu baru muncul BESAR
         applyCardsMode(true);
         showBig(nextS.big);
+        playSfx("cardShow");                          // sparkle
       } else if (nextS.big < 0 && prev.big >= 0 && nextS.slotted > prev.slotted) {
+        playSfx("cardSlot");                          // chips mendarat
         flyBigToSlot(prev.big);                       // kartu besar → slot
       }
       applyDiscussMode(nextS.discuss);                // step terakhir → DISCUSS
@@ -487,6 +561,7 @@
         slot.classList.add("rv-correct");
         addGlow(slot);
         addStamp(slot, FX.stampOk);
+        playSfx("revealConfirm");                       // ding "benar"
       } else {
         slot.classList.add("rv-dim");
       }
@@ -504,6 +579,7 @@
         slot.classList.add("rv-correct");
         addGlow(slot);
         addStamp(slot, FX.stampOk);
+        playSfx("revealConfirm");                       // ding "benar" (per kartu)
       }, 250 * n);
     });
     const base = 250 * correct.length;
@@ -514,6 +590,7 @@
         slot.classList.add("rv-trap");
         addCrack(slot);
         addStamp(slot, FX.stampBad);
+        playSfx("revealRedFlag");                        // buzz "trap" (per kartu)
       }, base + 200 * n);
     });
   }
@@ -532,7 +609,7 @@
       if (!slot) return;
       later(() => {
         addDelta(slot, r.delta);
-        if (r === winner) { slot.classList.add("rv-winner"); addGlow(slot); }
+        if (r === winner) { slot.classList.add("rv-winner"); addGlow(slot); playSfx("win"); }
         else if (val(r) < 0) { slot.classList.add("rv-down"); }
       }, 300 * n);
     });
@@ -572,9 +649,10 @@
     }
   }
 
-  // ---------- Mute (placeholder, audio di fase berikutnya) ----------
+  // ---------- Mute musik (default TIDAK muted) ----------
   function toggleMute() {
     muted = !muted;
+    if (musicEl) musicEl.volume = muted ? 0 : MUSIC_VOL;
     console.log("Mute:", muted);
   }
 
@@ -597,6 +675,7 @@
 
   // ---------- e) Keyboard ----------
   function onKeydown(e) {
+    unlockAudio();   // Fase C3 — interaksi pertama membuka audio
     switch (e.key) {
       case " ":
       case "ArrowRight":
@@ -632,9 +711,11 @@
   function init() {
     fillHelp();
     makeRevealNote();          // Fase C2 — siapkan banner headline note
+    preloadSfx();              // Fase C3 — warm cache SFX
     resizeStage();
     window.addEventListener("resize", resizeStage);
     window.addEventListener("keydown", onKeydown);
+    window.addEventListener("click", unlockAudio);   // Fase C3 — unlock via klik juga
     preload();
   }
 
