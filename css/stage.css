@@ -892,19 +892,33 @@ html, body {
   box-shadow: 0 0 16px rgba(212, 175, 55, 0.65);
 }
 
+/* V11 Fase 3 — Overlay GELAP saat kartu di-showcase di tengah.
+   Layering: bg < panel(2) < band(3) < soal-dark(4) < soal-showcase(5).
+   Jadi panel + band + bg meredup, hanya kartu aktif (di atasnya) yang terang. */
+.soal-dark {
+  position: absolute; inset: 0;
+  background: rgba(6, 10, 24, 0.82);
+  z-index: 4; opacity: 0; pointer-events: none;
+}
+
 /* ---------- Fase 5b — Showcase kartu BESAR di tengah (dibacakan MC) ---------- */
 .soal-showcase {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  z-index: 4; pointer-events: none;
+  z-index: 5; pointer-events: none;
 }
-/* Spotlight glow halus di belakang kartu besar */
+/* V11 Fase 3 — Spotlight vignette HALUS di belakang kartu (radial-gradient, BUKAN gambar glow).
+   Di dalam stacking context .soal-showcase (z5) → di atas overlay gelap, di bawah kartu. */
 .soal-spot {
   position: absolute; left: 50%; top: 50%;
-  width: 1100px; max-width: 80%; height: auto;
+  width: 1180px; height: 920px; max-width: 84%;
   transform: translate(-50%, -50%);
   opacity: 0; z-index: 1; pointer-events: none;
-  mix-blend-mode: screen;
+  background: radial-gradient(ellipse at center,
+    rgba(244, 215, 122, 0.20) 0%,
+    rgba(244, 215, 122, 0.10) 34%,
+    rgba(201, 169, 97, 0.04) 56%,
+    rgba(201, 169, 97, 0) 70%);
 }
 /* Inner = kartu + badge (di-scale GSAP; tanpa transform centering) */
 .soal-showcase-inner {
@@ -932,7 +946,7 @@ html, body {
 
 /* Kartu yang "terbang" dari showcase ke slot band (FLIP, koord stage) */
 .soal-flyer {
-  position: absolute; z-index: 5;
+  position: absolute; z-index: 6;
   border-radius: 12px; object-fit: contain;
   box-shadow: 0 0 44px rgba(201, 169, 97, 0.55), 0 12px 34px rgba(0, 0, 0, 0.6);
   pointer-events: none;

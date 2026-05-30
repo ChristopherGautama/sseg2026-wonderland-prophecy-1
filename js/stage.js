@@ -65,6 +65,7 @@
   const boardPanel = boardEl.querySelector(".board-panel");
   const soalCardsEl = boardEl.querySelector(".soal-cards");
   const soalShowcaseEl = boardEl.querySelector(".soal-showcase");
+  const soalDarkEl = boardEl.querySelector(".soal-dark");   // V11 Fase 3 — overlay gelap showcase
   const celebrateEl = boardEl.querySelector(".soal-celebrate");
   const BOARD_STATE_B = { scale: 0.66, y: -186 };  // shrink + naik ke atas-tengah
 
@@ -561,7 +562,6 @@
   //                          kartu[0..soalStep-2] sudah menetap di band
   //   soalStep N+1         = "diskusi": semua kartu di band, spotlight-dim hilang
   //   SPACE saat N+1       → lanjut scene (lewat navigasi yang ada)
-  const SHOWCASE_GLOW = "assets/img/shared/glow-gold.png";
 
   // Masuk scene ronde → STATE A (papan masuk).
   function enterRoundSoal(item) {
@@ -584,6 +584,7 @@
     boardEl.classList.add("active");
     setPanel(false, false);           // papan BESAR di tengah
     setDim("full", false);
+    setShowcaseDark(false, false);    // V11 Fase 3 — STATE A belum ada showcase
     playBoardIntro();
   }
 
@@ -592,13 +593,14 @@
     if (!roundActive) { boardEl.classList.remove("active"); return; }
     roundActive = false;
     soalStep = 0;
-    if (window.gsap) gsap.killTweensOf([boardPanel, boardDim]);
+    if (window.gsap) gsap.killTweensOf([boardPanel, boardDim, soalDarkEl]);
     clearSoalReveal();                // Fase 8 — buang glow/particle/stamp reveal
     stageEl.querySelectorAll(".soal-flyer").forEach((f) => f.remove());
     soalShowcaseEl.innerHTML = "";
     soalCardsEl.innerHTML = "";
     boardEl.classList.remove("active");
     boardDim.style.opacity = "";
+    soalDarkEl.style.opacity = "";    // V11 Fase 3 — reset overlay gelap
     if (window.gsap) gsap.set(boardPanel, { clearProps: "all" });
   }
 
@@ -646,6 +648,14 @@
     if (window.gsap) gsap.to(boardDim, { opacity: op, duration: dur, ease: "power2.inOut" });
     else boardDim.style.opacity = String(op);
   }
+  // V11 Fase 3 — overlay gelap showcase (di atas panel+band, di bawah kartu aktif).
+  // on=true saat ada kartu besar di tengah; off saat STATE A & diskusi. Fade ~0.35s.
+  function setShowcaseDark(on, animate) {
+    const op = on ? 1 : 0;
+    const dur = animate ? 0.35 : 0;
+    if (window.gsap) gsap.to(soalDarkEl, { opacity: op, duration: dur, ease: "power2.inOut" });
+    else soalDarkEl.style.opacity = String(op);
+  }
 
   // Animasi MASUK STATE A: board scale 0.92→1 + fade + glow (power3.out ~1s).
   function playBoardIntro() {
@@ -662,12 +672,12 @@
     }
   }
 
-  // Tampilkan kartu[i] BESAR di tengah + spotlight glow (scale 0.9→1 + fade).
+  // Tampilkan kartu[i] BESAR di tengah + spotlight vignette (scale 0.9→1 + fade).
+  // V11 Fase 3 — vignette = div radial-gradient (CSS), BUKAN gambar glow-gold.
   function showBigCard(i, animate) {
     soalShowcaseEl.innerHTML = "";
-    const spot = document.createElement("img");
-    spot.className = "soal-spot"; spot.alt = ""; spot.src = SHOWCASE_GLOW;
-    spot.onerror = () => spot.remove();
+    const spot = document.createElement("div");
+    spot.className = "soal-spot";
     soalShowcaseEl.appendChild(spot);
 
     const inner = document.createElement("div");
@@ -730,6 +740,7 @@
       soalStep = 1;
       setPanel(true, true);
       setDim("soft", true);
+      setShowcaseDark(true, true);             // V11 Fase 3 — layar gelap, kartu jadi fokus
       showBigCard(0, true);
       playSfx("cardShow");
       return true;
@@ -745,6 +756,7 @@
       } else {
         soalStep = N + 1;                       // kartu terakhir menetap → diskusi
         setDim("none", true);
+        setShowcaseDark(false, true);          // V11 Fase 3 — layar terang penuh lagi
       }
       return true;
     }
@@ -775,14 +787,17 @@
     if (s <= 0) {
       setPanel(false, false);
       setDim("full", false);
+      setShowcaseDark(false, false);   // V11 Fase 3
     } else if (s <= N) {
       setPanel(true, false);
       setDim("soft", false);
+      setShowcaseDark(true, false);    // V11 Fase 3 — masih showcase → gelap
       for (let i = 0; i < s - 1; i++) settleBandSlot(i);
       showBigCard(s - 1, false);
     } else {                           // N+1 (diskusi) atau N+2 (reveal)
       setPanel(true, false);
       setDim("none", false);
+      setShowcaseDark(false, false);   // V11 Fase 3 — diskusi/reveal → terang
       for (let i = 0; i < N; i++) settleBandSlot(i);
       if (s === N + 2) doSoalReveal(false);   // snap reveal (tanpa animasi)
     }
