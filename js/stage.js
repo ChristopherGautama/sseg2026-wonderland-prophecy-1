@@ -48,6 +48,17 @@
   const clSweep = closingEl.querySelector(".cl-sweep");
   const CLOSING_SPARK = "assets/img/shared/particle-goldspark.png";
 
+  // Fase 4 (v10) — overlay transition title screen (R1–R9 + Bonus)
+  const transitionEl = document.getElementById("transition");
+  const trGlow = transitionEl.querySelector(".tr-glow");
+  const trParticles = transitionEl.querySelector(".tr-particles");
+  const trTitle = transitionEl.querySelector(".tr-title");
+  const trSub = transitionEl.querySelector(".tr-sub");
+  const trRound = transitionEl.querySelector(".tr-round");
+  const trOf = transitionEl.querySelector(".tr-of");
+  const trName = transitionEl.querySelector(".tr-name");
+  const TRANSITION_SPARK = "assets/img/shared/particle-goldspark.png";
+
   // Poses Wizco per konteks (aset di assets/img/wizco/).
   const WIZCO_POSE = {
     opening: "assets/img/wizco/wizco-greeting.png",
@@ -72,6 +83,12 @@
   let closingSparkTimer = null;// setInterval spawn spark
   let closingBgTween = null;   // GSAP zoom bg-slot
   let closingBgSlot = null;    // slot bg yg di-zoom (untuk reset)
+
+  // Fase 4 (v10) — state transition
+  let transitionActive = false;   // scene transisi sedang tampil?
+  let transitionSparkTimer = null;// setInterval spawn spark
+  let transitionBgTween = null;   // GSAP zoom bg-slot
+  let transitionBgSlot = null;    // slot bg yg di-zoom (untuk reset)
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -402,6 +419,118 @@
     clParticles.appendChild(s);
   }
 
+  // ============================================================
+  // Fase 4 (v10) — TRANSITION title screen (R1–R9 + Bonus)
+  // Konten diisi dari ROUNDS (config). Tidak menyentuh music loop ronde.
+  // ============================================================
+
+  // Konversi angka → Romawi (algoritmik; cukup utk 1–9, generik utk lebih).
+  function toRoman(num) {
+    const table = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+    let r = "", n = num;
+    for (let k = 0; k < table.length; k++) {
+      while (n >= table[k][0]) { r += table[k][1]; n -= table[k][0]; }
+    }
+    return r;
+  }
+
+  function enterTransition(key) {
+    const round = (typeof ROUNDS !== "undefined") ? ROUNDS[key] : null;
+    const isBonus = key === "bonus";
+
+    // --- isi teks dari config ---
+    trSub.textContent = round ? (round.subtitle || "") : "";
+    if (isBonus) {
+      trRound.textContent = "BONUS ROUND";
+      trOf.textContent = "";
+      trOf.style.display = "none";
+    } else {
+      const n = parseInt(String(key).replace("r", ""), 10);
+      trRound.textContent = "ROUND " + (n ? toRoman(n) : String(key).toUpperCase());
+      trOf.textContent = "of 9";
+      trOf.style.display = "";
+    }
+    trName.textContent = round ? (round.title || "") : "";
+
+    transitionActive = true;
+    transitionEl.classList.add("active");
+    playTransitionIntro();
+    startTransitionSparks();
+    startTransitionBgZoom();
+    playSfx("cardShow");            // aksen sparkle one-shot (tidak ganggu musik)
+  }
+
+  function teardownTransition() {
+    if (!transitionActive) { transitionEl.classList.remove("active"); return; }
+    transitionActive = false;
+    transitionEl.classList.remove("active");
+    stopTransitionSparks();
+    stopTransitionBgZoom();
+    if (window.gsap) gsap.killTweensOf([trTitle, trRound]);
+  }
+
+  // Animasi MASUK: angka ronde scale 0.7→1 + fade (back.out(1.4) ~0.9s).
+  function playTransitionIntro() {
+    if (window.gsap) {
+      gsap.killTweensOf([trTitle, trRound]);
+      gsap.fromTo(trTitle, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" });
+      gsap.fromTo(trRound,
+        { scale: 0.7, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.9, ease: "back.out(1.4)",
+          transformOrigin: "50% 50%" });
+    } else {
+      trTitle.style.opacity = "1";
+    }
+  }
+
+  function startTransitionBgZoom() {
+    if (!window.gsap) return;
+    requestAnimationFrame(() => {
+      if (!transitionActive) return;
+      transitionBgSlot = document.querySelector(".bg-slot.show") || transitionBgSlot;
+      if (!transitionBgSlot) return;
+      gsap.killTweensOf(transitionBgSlot);
+      gsap.set(transitionBgSlot, { transformOrigin: "50% 50%" });
+      transitionBgTween = gsap.fromTo(transitionBgSlot,
+        { scale: 1, yPercent: 0 },
+        { scale: 1.07, yPercent: -1.5, duration: 22, ease: "sine.inOut",
+          repeat: -1, yoyo: true });
+    });
+  }
+  function stopTransitionBgZoom() {
+    if (transitionBgTween) { transitionBgTween.kill(); transitionBgTween = null; }
+    if (transitionBgSlot && window.gsap) gsap.set(transitionBgSlot, { clearProps: "transform" });
+    transitionBgSlot = null;
+  }
+
+  function startTransitionSparks() {
+    stopTransitionSparks();
+    for (let i = 0; i < 10; i++) spawnTransitionSpark(true);
+    transitionSparkTimer = setInterval(() => {
+      if (transitionActive && trParticles.children.length < 22) spawnTransitionSpark(false);
+    }, 520);
+  }
+  function stopTransitionSparks() {
+    if (transitionSparkTimer) { clearInterval(transitionSparkTimer); transitionSparkTimer = null; }
+    trParticles.innerHTML = "";
+  }
+  function spawnTransitionSpark(immediate) {
+    const s = document.createElement("img");
+    s.className = "tr-spark"; s.alt = "";
+    s.src = TRANSITION_SPARK;
+    s.onerror = () => s.remove();
+    const size = 10 + Math.random() * 22;
+    const dur = 6 + Math.random() * 6;
+    const delay = immediate ? -(Math.random() * dur) : 0;
+    s.style.left = (Math.random() * 100) + "%";
+    s.style.width = size + "px";
+    s.style.setProperty("--sp-rise", (480 + Math.random() * 520) + "px");
+    s.style.setProperty("--sp-drift", (Math.random() * 120 - 60) + "px");
+    s.style.setProperty("--sp-op", (0.5 + Math.random() * 0.5).toFixed(2));
+    s.style.animation = "sparkFloat " + dur.toFixed(2) + "s linear " + delay.toFixed(2) + "s infinite";
+    trParticles.appendChild(s);
+  }
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -477,11 +606,13 @@
   // Panel & wizco tampil hanya di scene "bg" yang punya data ROUNDS.
   // Scene "transition" → semua disembunyikan (cuma gambar romawi).
   function renderOverlay(item) {
-    // Fase 2/3 (v10) — opening & closing punya cinematic sendiri (tanpa panel biru).
+    // Fase 2/3/4 (v10) — opening, closing & transisi punya cinematic sendiri.
     const isOpening = item.type === "bg" && item.key === "opening";
     const isClosing = item.type === "bg" && item.key === "closing";
+    const isTransition = item.type === "transition";
     if (isOpening) enterOpening(); else teardownOpening();
     if (isClosing) enterClosing(); else teardownClosing();
+    if (isTransition) enterTransition(item.key); else teardownTransition();
 
     const round = (item.type === "bg" && !isOpening && !isClosing) ? ROUNDS[item.key] : null;
 
@@ -1009,12 +1140,18 @@
     window.addEventListener("resize", resizeStage);
     window.addEventListener("keydown", onKeydown);
     window.addEventListener("click", unlockAudio);   // Fase C3 — unlock via klik juga
-    // Helper test (DevTools): gotoScene(index) atau gotoScene('closing').
-    // Murni untuk debug — tidak mengubah perilaku navigasi keyboard.
-    window.gotoScene = function (i) {
-      if (typeof i === "string") i = SCENES.findIndex((s) => s.key === i && s.type === "bg");
+    // Helper test (DevTools) — murni debug, tidak mengubah navigasi keyboard:
+    //   gotoScene(7)                    → loncat by index
+    //   gotoScene('closing')            → scene bg (default)
+    //   gotoScene('r3', 'transition')   → scene transisi ronde
+    window.gotoScene = function (i, type) {
+      if (typeof i === "string") {
+        const t = type || "bg";
+        i = SCENES.findIndex((s) => s.key === i && s.type === t);
+      }
       if (i >= 0) showScene(i);
     };
+    window.gotoTransition = function (key) { window.gotoScene(key, "transition"); };
     preload();
   }
 
