@@ -59,6 +59,13 @@
   const trName = transitionEl.querySelector(".tr-name");
   const TRANSITION_SPARK = "assets/img/shared/particle-goldspark.png";
 
+  // Fase 5 (v10) — papan soal (board) 2-state
+  const boardEl = document.getElementById("board");
+  const boardDim = boardEl.querySelector(".board-dim");
+  const boardPanel = boardEl.querySelector(".board-panel");
+  const soalCardsEl = boardEl.querySelector(".soal-cards");
+  const BOARD_STATE_B = { scale: 0.66, y: -186 };  // shrink + naik ke atas-tengah
+
   // Poses Wizco per konteks (aset di assets/img/wizco/).
   const WIZCO_POSE = {
     opening: "assets/img/wizco/wizco-greeting.png",
@@ -89,6 +96,10 @@
   let transitionSparkTimer = null;// setInterval spawn spark
   let transitionBgTween = null;   // GSAP zoom bg-slot
   let transitionBgSlot = null;    // slot bg yg di-zoom (untuk reset)
+
+  // Fase 5 (v10) — state papan soal
+  let roundActive = false;   // scene ronde (papan soal) sedang tampil?
+  let soalStep = 0;          // 0 = STATE A (papan masuk) · 1 = STATE B (diskusi)
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -531,6 +542,128 @@
     trParticles.appendChild(s);
   }
 
+  // ============================================================
+  // Fase 5 (v10) — PAPAN SOAL (board) 2-state, seragam semua ronde.
+  // Mapping kartu & badge PAKAI ULANG data lama (CARDS + CARD_BADGES).
+  // Tidak menyentuh sistem reveal lama (doReveal) — itu Fase 8.
+  // ============================================================
+
+  // Masuk scene ronde → STATE A (papan masuk).
+  function enterRoundSoal(item) {
+    const key = item.key;
+    roundActive = true;
+    soalStep = 0;
+    currentKey = key;
+    roundCards = (typeof CARDS !== "undefined" && CARDS[key]) ? CARDS[key] : [];
+
+    // Papan soal (PANELS[key].soal). R1 → panel-r1-soal.png (bukan reveal).
+    const soalPath = (typeof PANELS !== "undefined" && PANELS[key] && PANELS[key].soal)
+      ? PANELS[key].soal : null;
+    boardPanel.style.display = "";
+    boardPanel.onerror = () => { boardPanel.style.display = "none"; };
+    if (soalPath) boardPanel.src = soalPath;
+
+    buildBandCards();                 // kartu band (tersembunyi hingga STATE B)
+    boardEl.classList.add("active");
+    applySoalState(0, false);         // pasang STATE A (instan), lalu intro
+    playBoardIntro();
+  }
+
+  // Keluar dari ronde (pindah scene non-ronde) → bersihkan board.
+  function teardownRoundSoal() {
+    if (!roundActive) { boardEl.classList.remove("active"); return; }
+    roundActive = false;
+    soalStep = 0;
+    if (window.gsap) gsap.killTweensOf([boardPanel, boardDim, soalCardsEl]);
+    boardEl.classList.remove("active");
+    soalCardsEl.innerHTML = "";
+    soalCardsEl.style.opacity = "0";
+    boardDim.style.opacity = "";
+    if (window.gsap) gsap.set(boardPanel, { clearProps: "all" });
+  }
+
+  // Bangun kartu band dari mapping config (CARDS) + badge (CARD_BADGES).
+  function buildBandCards() {
+    soalCardsEl.innerHTML = "";
+    soalCardsEl.dataset.count = roundCards.length;
+    roundCards.forEach((path, i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "soal-card-wrap";
+      wrap.style.opacity = "0";
+      const img = document.createElement("img");
+      img.className = "soal-card";
+      img.src = path;
+      img.onerror = () => console.warn("Kartu gagal dimuat:", path);
+      const badge = document.createElement("div");
+      badge.className = "soal-badge";
+      badge.textContent = (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
+      wrap.appendChild(img);
+      wrap.appendChild(badge);
+      soalCardsEl.appendChild(wrap);
+    });
+  }
+
+  // Animasi MASUK STATE A: board scale 0.92→1 + fade + glow (power3.out ~1s).
+  function playBoardIntro() {
+    if (window.gsap) {
+      gsap.killTweensOf([boardPanel, boardDim]);
+      gsap.fromTo(boardPanel,
+        { opacity: 0, scale: 0.92 },
+        { opacity: 1, scale: 1, duration: 1.0, ease: "power3.out",
+          transformOrigin: "50% 50%" });
+      gsap.fromTo(boardDim, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" });
+    } else {
+      boardPanel.style.opacity = "1";
+      boardDim.style.opacity = "1";
+    }
+  }
+
+  // Toggle STATE A↔B. target 0=A, 1=B. animate=true → transisi GSAP ~0.9s.
+  function applySoalState(target, animate) {
+    soalStep = target;
+    if (window.gsap) {
+      const dimDur = animate ? 0.6 : 0;
+      const moveDur = animate ? 0.9 : 0;
+      if (target === 1) {
+        gsap.to(boardDim, { opacity: 0, duration: dimDur, ease: "power2.inOut" });
+        gsap.to(boardPanel, { scale: BOARD_STATE_B.scale, y: BOARD_STATE_B.y,
+          duration: moveDur, ease: "power2.inOut", transformOrigin: "50% 50%" });
+        showBandCards(animate);
+      } else {
+        gsap.to(boardDim, { opacity: 1, duration: dimDur, ease: "power2.inOut" });
+        gsap.to(boardPanel, { scale: 1, y: 0,
+          duration: moveDur, ease: "power2.inOut", transformOrigin: "50% 50%" });
+        hideBandCards();
+      }
+    } else {
+      boardDim.style.opacity = target === 1 ? "0" : "1";
+      boardPanel.style.transform = target === 1
+        ? "scale(" + BOARD_STATE_B.scale + ") translateY(" + BOARD_STATE_B.y + "px)"
+        : "scale(1)";
+      if (target === 1) showBandCards(false); else hideBandCards();
+    }
+  }
+
+  // Kartu band muncul (stagger 0.12s, power3.out).
+  function showBandCards(animate) {
+    soalCardsEl.style.opacity = "1";
+    const cards = soalCardsEl.querySelectorAll(".soal-card-wrap");
+    if (window.gsap && animate) {
+      gsap.killTweensOf(cards);
+      gsap.fromTo(cards,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.12 });
+    } else {
+      cards.forEach((c) => { c.style.opacity = "1"; c.style.transform = "none"; });
+    }
+  }
+  function hideBandCards() {
+    soalCardsEl.style.opacity = "0";
+    const cards = soalCardsEl.querySelectorAll(".soal-card-wrap");
+    if (window.gsap) gsap.set(cards, { opacity: 0, y: 40, clearProps: "transform" });
+    else cards.forEach((c) => { c.style.opacity = "0"; });
+  }
+
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
     const scale = Math.min(
@@ -614,35 +747,16 @@
     if (isClosing) enterClosing(); else teardownClosing();
     if (isTransition) enterTransition(item.key); else teardownTransition();
 
-    const round = (item.type === "bg" && !isOpening && !isClosing) ? ROUNDS[item.key] : null;
+    // --- Panel biru lama: PENSIUN di v10 (ronde diganti board image) ---
+    showAnimated(panelEl, false);
 
-    // --- Panel soal ---
-    if (round) {
-      panelSub.textContent = round.subtitle || "";
-      panelTitle.textContent = round.title || "";
-      panelScenario.textContent = round.scenario || "";
-      if (round.wager) {
-        panelMeta.textContent =
-          "WAGER " + round.wager + " " + CONFIG.currency + "   ·   MULT " + round.mult;
-        panelMeta.classList.remove("hidden");
-      } else {
-        panelMeta.classList.add("hidden");
-      }
-      showAnimated(panelEl, true);
-    } else {
-      showAnimated(panelEl, false);
-    }
-
-    // --- Timer (hanya ronde yang punya TIMER_SECONDS) ---
+    // --- Timer (static; hanya ronde yang punya TIMER_SECONDS) ---
     setupTimer(item.type === "bg" ? item.key : null);
 
-    // --- Wizco ---
+    // --- Wizco (hanya opening & closing; ronde fokus ke board) ---
     let pose = null;
-    if (item.type === "bg") {
-      if (item.key === "opening") pose = WIZCO_POSE.opening;
-      else if (item.key === "closing") pose = WIZCO_POSE.closing;
-      else if (round) pose = WIZCO_POSE.round;
-    }
+    if (item.key === "opening") pose = WIZCO_POSE.opening;
+    else if (item.key === "closing") pose = WIZCO_POSE.closing;
     if (pose) {
       if (wizcoEl.getAttribute("src") !== pose) wizcoEl.setAttribute("src", pose);
       showAnimated(wizcoEl, true);
@@ -738,17 +852,24 @@
   function applyCardsMode(on) { panelEl.classList.toggle("compact", on); }
   function applyDiscussMode(on) { stageEl.classList.toggle("discuss", on); }
 
-  // Reset layer kartu setiap masuk scene. Scene non-ronde → kartu kosong.
+  // Reset layer setiap masuk scene. Ronde → board soal (Fase 5); lainnya → bersih.
   function enterScene(item) {
     step = 0;
-    currentKey = (item.type === "bg") ? item.key : null;
-    roundCards = (item.type === "bg" && typeof CARDS !== "undefined" && CARDS[item.key])
-      ? CARDS[item.key] : [];
     showcaseEl.innerHTML = "";
-    clearReveal();                 // Fase C2 — buang FX reveal dari scene sebelumnya
-    buildSlotsSkeleton();          // semua slot pending (invisible) → layout stabil
+    clearReveal();                 // bersihkan FX reveal lama (aman, no-op utk v10)
     applyCardsMode(false);
     applyDiscussMode(false);
+
+    const key = item.key;
+    const isRound = item.type === "bg" && key !== "opening" && key !== "closing"
+      && typeof PANELS !== "undefined" && !!PANELS[key];
+    if (isRound) {
+      enterRoundSoal(item);        // Fase 5 — STATE A (papan masuk)
+    } else {
+      teardownRoundSoal();
+      roundCards = [];
+      currentKey = null;
+    }
   }
 
   // Skeleton: semua slot dibuat duluan (hidden) supaya posisi tak bergeser.
@@ -1038,28 +1159,31 @@
   }
 
   // ---------- d) Navigasi ----------
-  // Space/→ : maju sub-fase kartu dulu; kalau sudah DISCUSS → scene berikutnya.
-  function next() {
-    // Fase 2 (v10) — opening: SPACE memutar animasi keluar dulu, lalu lanjut.
-    if (SCENES[currentIndex].key === "opening" && SCENES[currentIndex].type === "bg") {
-      if (openingExiting) return;                          // sedang keluar → abaikan
-      exitOpening(() => {
-        if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
-      });
-      return;
-    }
-    if (roundCards.length) {
-      // 2N+1 = DISCUSS · 2N+2 = REVEAL. Space di akhir DISCUSS → REVEAL,
-      // Space saat REVEAL sudah tampil → lanjut scene berikutnya.
-      const revealStep = 2 * roundCards.length + 2;
-      if (step < revealStep) { goToStep(step + 1, +1); return; }
-    }
+  function advanceScene() {
     if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
     else showScene(0);   // Fase 3 (v10) — scene terakhir (closing) → loop balik ke opening
   }
-  // ← : mundur sub-fase kartu dulu; kalau sudah di SCENARIO → scene sebelumnya.
+
+  // Space/→ : opening keluar · ronde STATE A→B→scene · lainnya → scene berikutnya.
+  function next() {
+    const cur = SCENES[currentIndex];
+    // Fase 2 (v10) — opening: SPACE memutar animasi keluar dulu, lalu lanjut.
+    if (cur.key === "opening" && cur.type === "bg") {
+      if (openingExiting) return;
+      exitOpening(advanceScene);
+      return;
+    }
+    // Fase 5 (v10) — ronde: STATE A → STATE B → scene berikutnya.
+    if (roundActive) {
+      if (soalStep === 0) { applySoalState(1, true); playSfx("cardShow"); return; }
+      advanceScene();
+      return;
+    }
+    advanceScene();
+  }
+  // ← : ronde STATE B→A · lainnya → scene sebelumnya.
   function prev() {
-    if (roundCards.length && step > 0) { goToStep(step - 1, -1); return; }
+    if (roundActive && soalStep === 1) { applySoalState(0, true); return; }
     if (currentIndex > 0) showScene(currentIndex - 1);
   }
   function reset() { showScene(0); }
