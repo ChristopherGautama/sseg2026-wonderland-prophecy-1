@@ -82,3 +82,24 @@ const CARDS = {
   bonus: [ "assets/img/cards/bonus/qull-bonus-card.png", "assets/img/cards/bonus/noct-bonus-card.png", "assets/img/cards/bonus/spyr-bonus-card.png", "assets/img/cards/bonus/prpr-bonus-card.png", "assets/img/cards/bonus/skip-card.png" ]
 };
 const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan
+
+// ============================================================
+// FASE C2 — Kunci jawaban + tipe ronde (untuk fase REVEAL).
+// Index mengacu ke array CARDS (0=A, 1=B, 2=C, …).
+// Tiga tipe:
+//   "single" : 1 jawaban benar.
+//   "multi"  : beberapa benar (correct[]) + sisanya trap[].
+//   "alloc"  : alokasi — tiap kartu punya hasil +/- (delta), ada urutan terbaik→terburuk.
+// ============================================================
+const ANSWERS = {
+  r1: { type:"single", correct:[1], note:"Double Bottom — reversal bullish ke 460." },
+  r2: { type:"single", correct:[1], note:"NOCT — sektor defensif diuntungkan saat suku bunga naik." },
+  r3: { type:"single", correct:[0], note:"SPYR — growth/tech memimpin pasar Goldilocks." },
+  r4: { type:"alloc", results:[ {i:0,delta:"+15"},{i:3,delta:"+8"},{i:1,delta:"+4"},{i:2,delta:"+2"},{i:4,delta:"-4"} ], note:"SPYR & MIRR terbaik; GRIN rugi." },
+  r5: { type:"multi", correct:[0,1,2], trap:[3,4,5], note:"Trio bertahan: Gold + Cash + Gov-Bond. Trap: Deposito/Bitcoin/Saham." },
+  r6: { type:"multi", correct:[0,1,2], trap:[3,4,5], note:"Trio katalis: CSTR + RBBT + LUMN." },
+  r7: { type:"multi", correct:[0,2,4], trap:[1,3,5], note:"Trio sehat: QULL + NOCT + GRIN. Trap: MIRR/SPYR/TARO." },
+  r8: { type:"alloc", results:[ {i:0,delta:"+20"},{i:1,delta:"+9"},{i:2,delta:"+2"},{i:3,delta:"-8"},{i:4,delta:"-6"} ], note:"RBBT & GRIN terbaik (ekspor); MIRR/SPYR rugi." },
+  r9: { type:"alloc", results:[ {i:3,delta:"+100"},{i:0,delta:"+50"},{i:2,delta:"+5"},{i:1,delta:"-60"} ], note:"EVRG juara; HNPR kuat; MRRT jeblok." },
+  bonus: { type:"multi", correct:[0,1], trap:[2,3], note:"QULL atau NOCT bertahan. (SKIP = aman, tak untung-rugi.)" }
+};

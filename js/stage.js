@@ -48,7 +48,13 @@
 
   // Fase C1 — state sub-fase kartu (operator-paced lewat Space/←)
   let roundCards = [];       // array path kartu scene aktif ([] = scene tanpa kartu)
-  let step = 0;              // 0=SCENARIO · 1..2N=showcase/slot · 2N+1=DISCUSS
+  let currentKey = null;     // key ronde scene aktif (untuk lookup ANSWERS) · null = non-ronde
+  let step = 0;              // 0=SCENARIO · 1..2N=showcase/slot · 2N+1=DISCUSS · 2N+2=REVEAL
+
+  // Fase C2 — state reveal
+  let revealed = false;      // FX reveal sedang tampil?
+  let revealNoteEl = null;   // banner headline note (dibuat saat init)
+  let revealTimers = [];     // setTimeout id utk stagger (dibersihkan saat clear)
 
   // ---------- a) Scaling safe-area ----------
   function resizeStage() {
@@ -231,14 +237,15 @@
   //   big     = index kartu yang sedang BESAR di showcase (-1 = tidak ada)
   //   discuss = true saat fase DISCUSS
   function cardStateForStep(s, N) {
-    if (s <= 0) return { slotted: 0, big: -1, discuss: false };          // SCENARIO
-    if (s >= 2 * N + 1) return { slotted: N, big: -1, discuss: true };   // DISCUSS
+    if (s <= 0) return { slotted: 0, big: -1, discuss: false, reveal: false };        // SCENARIO
+    if (s >= 2 * N + 2) return { slotted: N, big: -1, discuss: true, reveal: true };  // REVEAL
+    if (s >= 2 * N + 1) return { slotted: N, big: -1, discuss: true, reveal: false }; // DISCUSS
     if (s % 2 === 1) {                       // step ganjil → kartu BESAR
       const i = (s - 1) / 2;
-      return { slotted: i, big: i, discuss: false };
+      return { slotted: i, big: i, discuss: false, reveal: false };
     }
     const i = (s - 2) / 2;                   // step genap → kartu baru saja ke slot
-    return { slotted: i + 1, big: -1, discuss: false };
+    return { slotted: i + 1, big: -1, discuss: false, reveal: false };
   }
 
   function applyCardsMode(on) { panelEl.classList.toggle("compact", on); }
@@ -247,9 +254,11 @@
   // Reset layer kartu setiap masuk scene. Scene non-ronde → kartu kosong.
   function enterScene(item) {
     step = 0;
+    currentKey = (item.type === "bg") ? item.key : null;
     roundCards = (item.type === "bg" && typeof CARDS !== "undefined" && CARDS[item.key])
       ? CARDS[item.key] : [];
     showcaseEl.innerHTML = "";
+    clearReveal();                 // Fase C2 — buang FX reveal dari scene sebelumnya
     buildSlotsSkeleton();          // semua slot pending (invisible) → layout stabil
     applyCardsMode(false);
     applyDiscussMode(false);
@@ -354,11 +363,16 @@
   // Pindah satu sub-step. dir +1 = maju (animasi), -1 = mundur (snap).
   function goToStep(newStep, dir) {
     const N = roundCards.length;
+    const revealStep = 2 * N + 2;
     const prev = cardStateForStep(step, N);
     const nextS = cardStateForStep(newStep, N);
     step = newStep;
 
     if (dir > 0) {
+      if (newStep === revealStep) {                   // Fase C2 — masuk REVEAL
+        doReveal(currentKey);
+        return;
+      }
       if (nextS.big >= 0 && prev.big < 0) {          // kartu baru muncul BESAR
         applyCardsMode(true);
         showBig(nextS.big);
@@ -367,16 +381,178 @@
       }
       applyDiscussMode(nextS.discuss);                // step terakhir → DISCUSS
     } else {
+      clearReveal();                                  // mundur dari REVEAL → bersihkan FX
       rebuildInstant(nextS);                          // mundur: snap ke state
     }
+  }
+
+  // ============================================================
+  // Fase C2 — Reveal jawaban + FX (operator-paced, hanya scene ronde)
+  // ============================================================
+
+  const FX = {
+    glow:   "assets/img/shared/glow-gold.png",
+    stampOk:"assets/img/shared/stamp-confirmed.png",
+    stampBad:"assets/img/shared/stamp-red-flag.png",
+    crack:  "assets/img/shared/overlay-cracked.png"
+  };
+  const WIZCO_TRIUMPHANT = "assets/img/wizco/wizco-triumphant.png";
+
+  // Banner headline note (dibuat sekali, di-toggle .show).
+  function makeRevealNote() {
+    revealNoteEl = document.createElement("div");
+    revealNoteEl.id = "reveal-note";
+    stageEl.appendChild(revealNoteEl);
+  }
+
+  function setWizcoPose(src) {
+    if (src && wizcoEl.getAttribute("src") !== src) wizcoEl.setAttribute("src", src);
+  }
+
+  // Hentikan timer saat reveal (tidak reset sisa detik).
+  function stopTimerForReveal() {
+    timerRunning = false;
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  }
+
+  // jadwalkan aksi ber-delay; simpan id supaya bisa dibatalkan saat clear.
+  function later(fn, ms) { revealTimers.push(setTimeout(fn, ms)); }
+
+  // Buang semua FX reveal + note + timer stagger. Aman dipanggil kapan saja.
+  function clearReveal() {
+    revealTimers.forEach((t) => clearTimeout(t));
+    revealTimers = [];
+    revealed = false;
+    Array.from(slotsEl.children).forEach((slot) => {
+      slot.classList.remove("rv-correct", "rv-winner", "rv-dim", "rv-trap", "rv-down");
+      slot.querySelectorAll(".rv-glow, .rv-stamp, .rv-crack, .rv-delta").forEach((e) => e.remove());
+    });
+    if (revealNoteEl) { revealNoteEl.classList.remove("show"); revealNoteEl.textContent = ""; }
+    // hanya scene ronde (punya kartu) yg balik ke pose "thinking";
+    // opening/closing biarkan pose dari renderOverlay.
+    if (roundCards.length) setWizcoPose(WIZCO_POSE.round);
+  }
+
+  // ---- helper kecil: tempel elemen FX ke sebuah slot ----
+  function slotAt(i) { return slotsEl.children[i]; }
+
+  function addGlow(slot) {
+    const g = document.createElement("img");
+    g.className = "rv-glow"; g.alt = ""; g.src = FX.glow;
+    g.onerror = () => { console.warn("FX hilang:", FX.glow); g.remove(); };
+    slot.appendChild(g);
+  }
+  function addStamp(slot, src) {
+    const s = document.createElement("img");
+    s.className = "rv-stamp"; s.alt = ""; s.src = src;
+    s.onerror = () => { console.warn("FX hilang:", src); s.remove(); };
+    slot.appendChild(s);
+  }
+  function addCrack(slot) {
+    const c = document.createElement("img");
+    c.className = "rv-crack"; c.alt = ""; c.src = FX.crack;
+    c.onerror = () => { console.warn("FX hilang:", FX.crack); c.remove(); };
+    slot.appendChild(c);
+  }
+  // Badge delta coded (hijau +/ merah -) untuk tipe alloc.
+  function addDelta(slot, delta) {
+    const raw = String(delta).trim();
+    const positive = raw.charAt(0) !== "-";
+    const d = document.createElement("div");
+    d.className = "rv-delta " + (positive ? "rv-delta-pos" : "rv-delta-neg");
+    d.textContent = (positive && raw.charAt(0) !== "+") ? "+" + raw : raw;
+    slot.appendChild(d);
+  }
+
+  // Entry point dari goToStep saat masuk step REVEAL.
+  function doReveal(key) {
+    const ans = (typeof ANSWERS !== "undefined" && key) ? ANSWERS[key] : null;
+    if (!ans) { console.warn("Tidak ada ANSWERS untuk", key); return; }
+    revealed = true;
+    stopTimerForReveal();
+    setWizcoPose(WIZCO_TRIUMPHANT);
+    if (ans.type === "single") revealSingle(ans);
+    else if (ans.type === "multi") revealMulti(ans);
+    else if (ans.type === "alloc") revealAlloc(ans);
+    showRevealNote(ans.note);
+  }
+
+  // A) single — 1 kartu benar glow+confirmed, lainnya dim+grayscale.
+  function revealSingle(ans) {
+    const correct = ans.correct || [];
+    roundCards.forEach((_, i) => {
+      const slot = slotAt(i);
+      if (!slot) return;
+      if (correct.indexOf(i) !== -1) {
+        slot.classList.add("rv-correct");
+        addGlow(slot);
+        addStamp(slot, FX.stampOk);
+      } else {
+        slot.classList.add("rv-dim");
+      }
+    });
+  }
+
+  // B) multi — correct[] glow+confirmed (stagger), trap[] red-flag+retak+dim.
+  function revealMulti(ans) {
+    const correct = ans.correct || [];
+    const trap = ans.trap || [];
+    correct.forEach((idx, n) => {
+      const slot = slotAt(idx);
+      if (!slot) return;
+      later(() => {
+        slot.classList.add("rv-correct");
+        addGlow(slot);
+        addStamp(slot, FX.stampOk);
+      }, 250 * n);
+    });
+    const base = 250 * correct.length;
+    trap.forEach((idx, n) => {
+      const slot = slotAt(idx);
+      if (!slot) return;
+      later(() => {
+        slot.classList.add("rv-trap");
+        addCrack(slot);
+        addStamp(slot, FX.stampBad);
+      }, base + 200 * n);
+    });
+  }
+
+  // C) alloc — tiap kartu badge delta (+/−), juara (delta tertinggi) glow,
+  //    delta negatif sedikit redup. Stagger dari terburuk → terbaik.
+  function revealAlloc(ans) {
+    const results = (ans.results || []);
+    if (!results.length) return;
+    const val = (r) => parseInt(String(r.delta).replace("+", ""), 10) || 0;
+    let winner = results[0];
+    results.forEach((r) => { if (val(r) > val(winner)) winner = r; });
+    const ordered = results.slice().sort((a, b) => val(a) - val(b)); // terburuk dulu
+    ordered.forEach((r, n) => {
+      const slot = slotAt(r.i);
+      if (!slot) return;
+      later(() => {
+        addDelta(slot, r.delta);
+        if (r === winner) { slot.classList.add("rv-winner"); addGlow(slot); }
+        else if (val(r) < 0) { slot.classList.add("rv-down"); }
+      }, 300 * n);
+    });
+  }
+
+  function showRevealNote(text) {
+    if (!revealNoteEl) return;
+    revealNoteEl.textContent = text || "";
+    void revealNoteEl.offsetWidth;        // replay animasi masuk
+    revealNoteEl.classList.add("show");
   }
 
   // ---------- d) Navigasi ----------
   // Space/→ : maju sub-fase kartu dulu; kalau sudah DISCUSS → scene berikutnya.
   function next() {
     if (roundCards.length) {
-      const maxStep = 2 * roundCards.length + 1;
-      if (step < maxStep) { goToStep(step + 1, +1); return; }
+      // 2N+1 = DISCUSS · 2N+2 = REVEAL. Space di akhir DISCUSS → REVEAL,
+      // Space saat REVEAL sudah tampil → lanjut scene berikutnya.
+      const revealStep = 2 * roundCards.length + 2;
+      if (step < revealStep) { goToStep(step + 1, +1); return; }
     }
     if (currentIndex < SCENES.length - 1) showScene(currentIndex + 1);
   }
@@ -410,8 +586,8 @@
   function fillHelp() {
     helpOverlay.innerHTML =
       "<h2>Bantuan Kontrol</h2>" +
-      "<div>Space / → &nbsp; Maju: kartu (besar→slot) lalu scene berikutnya</div>" +
-      "<div>← &nbsp; Mundur: sub-fase kartu lalu scene sebelumnya</div>" +
+      "<div>Space / → &nbsp; Maju: kartu → DISCUSS → REVEAL → scene berikutnya</div>" +
+      "<div>← &nbsp; Mundur: sub-fase kartu / batal reveal lalu scene sebelumnya</div>" +
       "<div>R &nbsp; Reset ke awal</div>" +
       "<div>T &nbsp; Mulai / jeda timer</div>" +
       "<div>F &nbsp; Fullscreen</div>" +
@@ -455,6 +631,7 @@
   // ---------- f) Init ----------
   function init() {
     fillHelp();
+    makeRevealNote();          // Fase C2 — siapkan banner headline note
     resizeStage();
     window.addEventListener("resize", resizeStage);
     window.addEventListener("keydown", onKeydown);

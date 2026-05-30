@@ -388,3 +388,107 @@ html, body {
   from { box-shadow: 0 0 0 rgba(212,175,55,0); }
   to   { box-shadow: 0 0 26px rgba(212,175,55,0.5); }
 }
+
+/* ============================================================
+   FASE C2 — REVEAL jawaban + FX
+   FX ditempel ke .card-slot saat fase reveal; JS yang menambah/membuang.
+   Z-index eksplisit per layer dalam slot (scope = #card-slots, z11):
+     glow(1) < kartu(2) < retak(3) < stamp(5) < delta(6) < badge huruf(7)
+   ============================================================ */
+
+/* Transisi halus untuk perubahan state slot (naik / redup / desaturate) */
+.card-slot {
+  transition: transform 0.45s cubic-bezier(.2,.9,.3,1.1),
+              opacity 0.45s ease, filter 0.45s ease;
+}
+.card-slot img.slot-card { position: relative; z-index: 2; }
+.card-badge { z-index: 7; }
+
+/* State slot saat reveal */
+.card-slot.rv-correct,
+.card-slot.rv-winner { transform: translateY(-22px) scale(1.06); }
+.card-slot.rv-correct img.slot-card,
+.card-slot.rv-winner  img.slot-card {
+  border-color: rgba(212,175,55,0.95);
+  box-shadow: 0 0 42px rgba(212,175,55,0.85), 0 0 84px rgba(212,175,55,0.45);
+}
+.card-slot.rv-dim  { opacity: 0.35; filter: grayscale(0.85); }
+.card-slot.rv-down { opacity: 0.55; filter: saturate(0.7); }
+.card-slot.rv-trap { opacity: 0.5;  filter: grayscale(0.6); }
+
+/* --- Glow emas di belakang kartu --- */
+.rv-glow {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%,-50%);
+  width: 165%; height: auto; max-width: none;
+  z-index: 1; pointer-events: none;
+  animation: rvGlowPulse 1.8s ease-in-out infinite;
+}
+@keyframes rvGlowPulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%,-50%) scale(1); }
+  50%      { opacity: 0.92; transform: translate(-50%,-50%) scale(1.08); }
+}
+
+/* --- Stempel (CONFIRMED / RED FLAG) "thunk" di atas kartu --- */
+.rv-stamp {
+  position: absolute; left: 50%; top: 50%;
+  width: 80%; height: auto;
+  transform: translate(-50%,-50%) rotate(-10deg);
+  z-index: 5; pointer-events: none;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+  animation: rvStamp 0.42s cubic-bezier(.2,.8,.3,1.35) both;
+}
+@keyframes rvStamp {
+  0%   { opacity: 0; transform: translate(-50%,-50%) rotate(-22deg) scale(1.5); }
+  60%  { opacity: 1; transform: translate(-50%,-50%) rotate(-6deg)  scale(0.9); }
+  100% { opacity: 1; transform: translate(-50%,-50%) rotate(-10deg) scale(1); }
+}
+
+/* --- Overlay retak tipis untuk trap --- */
+.rv-crack {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 10px;
+  z-index: 3; pointer-events: none; opacity: 0.55;
+  animation: rvFadeIn 0.4s ease both;
+}
+@keyframes rvFadeIn { from { opacity: 0; } to { opacity: 0.55; } }
+
+/* --- Badge delta coded (alloc): hijau + / merah − --- */
+.rv-delta {
+  position: absolute; bottom: -26px; left: 50%;
+  transform: translateX(-50%);
+  min-width: 88px; padding: 6px 18px;
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: 30px;
+  text-align: center; border-radius: 22px; z-index: 6;
+  color: #F4E8C8; text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  border: 2px solid rgba(244,232,200,0.7);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  animation: rvDelta 0.4s cubic-bezier(.2,.8,.3,1.3) both;
+}
+.rv-delta-pos { background: #2E7D32; }
+.rv-delta-neg { background: #8B1E3F; }
+@keyframes rvDelta {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.6); }
+  60%  { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1.14); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+}
+
+/* --- Headline note (banner emas di zona atas yg kosong saat reveal) --- */
+#reveal-note {
+  position: absolute; left: 50%; top: 42px;
+  transform: translateX(-50%) translateY(-16px);
+  max-width: 1500px; padding: 18px 52px;
+  text-align: center;
+  font-family: 'Cinzel', serif; font-size: 34px; line-height: 1.35;
+  letter-spacing: 1px; color: #F4E8C8;
+  background: rgba(11,24,56,0.82);
+  border: 1px solid rgba(201,169,97,0.7);
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(212,175,55,0.3), 0 16px 40px rgba(0,0,0,0.5);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  z-index: 20; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s ease, transform 0.6s ease;
+}
+#reveal-note.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
