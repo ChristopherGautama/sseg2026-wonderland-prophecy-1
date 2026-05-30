@@ -5,29 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wonderland Prophecy — Stage View</title>
 
-  <!-- Tailwind CDN (cuma untuk utility kalau perlu; styling utama ada di stage.css) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- GSAP CDN untuk animasi transisi antar layar -->
+  <!-- GSAP CDN (baru dipakai Fase B; Fase A cukup CSS transition) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
   <link rel="stylesheet" href="css/stage.css" />
 </head>
 <body>
-  <!--
-    #stage-wrap = full viewport hitam (letterbox area).
-    #stage     = kanvas logis 1920x1080 yang di-scale via JS.
-    Semua layar (transition / scene / reveal) dirender ke dalam #stage.
-  -->
-  <div id="stage-wrap">
-    <div id="stage">
-      <!-- Layar loading awal (akan diganti begitu preload selesai) -->
-      <div class="loading-screen" id="loading-screen">
-        <div class="loading-title">Loading…</div>
-        <div class="loading-progress" id="loading-progress">0 / 0</div>
-      </div>
-    </div>
+  <!-- Lapisan background fullscreen: 2 slot untuk crossfade ping-pong -->
+  <div id="bg-layer">
+    <div class="bg-slot"></div>
+    <div class="bg-slot"></div>
   </div>
+
+  <!-- Safe-area konten 1920x1080 (kosong dulu, diisi fase berikutnya) -->
+  <div id="stage"></div>
+
+  <!-- Layar loading awal -->
+  <div id="loading-screen">
+    <div class="loading-title">Loading…</div>
+    <div class="loading-progress" id="loading-progress">0 / 0</div>
+  </div>
+
+  <!-- Label dev pojok kiri-atas -->
+  <div id="scene-label"></div>
+
+  <!-- Hint kontrol pojok kanan-bawah -->
+  <div id="hud-hint">Space ▶ &nbsp;·&nbsp; ← Back &nbsp;·&nbsp; F ⛶ &nbsp;·&nbsp; ? Bantuan</div>
+
+  <!-- Overlay bantuan -->
+  <div id="help-overlay" class="hidden"></div>
 
   <!-- Urutan penting: config dulu (data), baru engine (logika) -->
   <script src="js/config.js"></script>

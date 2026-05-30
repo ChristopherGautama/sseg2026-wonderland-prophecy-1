@@ -1,286 +1,62 @@
-/* =========================================================
-   Wonderland Prophecy — Stage View
-   Image-driven slideshow. SATU file CSS untuk semua styling.
-
-   Strategi layout:
-   - #stage adalah kanvas logis 1920x1080
-   - JS yang mengatur scale (transform) supaya pas di layar LED
-   - Semua elemen di dalam #stage memakai koordinat 1920x1080
-   ========================================================= */
-
-/* ---------- Reset ringan + body hitam (jadi letterbox) ---------- */
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  background: #000;            /* hitam = warna letterbox di sisa viewport */
-  overflow: hidden;             /* tidak boleh ada scrollbar di LED */
-  font-family: 'Cinzel', 'Times New Roman', serif;
-  color: #F4E8C8;
-  user-select: none;            /* operator tidak sengaja highlight teks */
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ---------- Stage wrap = full viewport, center kontainer kanvas ---------- */
-#stage-wrap {
-  position: fixed;
-  inset: 0;                     /* top/right/bottom/left = 0 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-}
-
-/* ---------- Kanvas logis 1920x1080 ---------- */
-#stage {
-  position: relative;
-  width: 1920px;
-  height: 1080px;
-  background: #000;             /* background dasar kalau gambar belum loaded */
+/* ===== Reset ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #05060a;
   overflow: hidden;
-  transform-origin: center center;  /* JS akan set transform: scale(...) */
+  font-family: Georgia, "Times New Roman", serif;
+  color: #F4E8C8;
 }
 
-/* ---------- Container per "screen" (overlap penuh kanvas) ---------- */
-.screen {
-  position: absolute;
-  inset: 0;                     /* fill 1920x1080 */
-  width: 100%;
-  height: 100%;
+/* ===== Background layer (crossfade ping-pong) ===== */
+#bg-layer { position: fixed; inset: 0; z-index: 0; background: #05060a; }
+.bg-slot {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity .6s ease;
 }
+.bg-slot.show { opacity: 1; }
 
-/* Gambar fullscreen — object-fit: contain supaya teks dalam gambar TIDAK ke-crop */
-.screen-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center center;
-  display: block;
-}
-
-/* ---------- Loading screen awal ---------- */
-.loading-screen {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #0B1838;
-  color: #C9A961;
-}
-.loading-title {
-  font-family: 'Cinzel', serif;
-  font-size: 72px;
-  letter-spacing: 8px;
-  text-shadow: 0 0 30px rgba(201,169,97,0.4);
-}
-.loading-progress {
-  margin-top: 24px;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 32px;
-  opacity: 0.7;
-}
-
-/* ---------- TIMER (pojok kanan-atas, satu-satunya teks yang dirender) ----------
-   Font besar, warna emas, ada outline + glow biar kebaca dari jauh di LED. */
-.timer-display {
-  position: absolute;
-  top: 40px;
-  right: 60px;
-  font-family: 'Cinzel', 'Georgia', serif;
-  font-weight: 700;
-  font-size: 110px;             /* besar — visible dari jauh */
-  line-height: 1;
-  color: #C9A961;               /* gold */
-  letter-spacing: 4px;
-  /* Outline gelap + glow emas biar nge-pop di atas gambar apapun */
-  text-shadow:
-    -3px -3px 0 #0B1838,
-     3px -3px 0 #0B1838,
-    -3px  3px 0 #0B1838,
-     3px  3px 0 #0B1838,
-     0 0 24px rgba(201,169,97,0.6);
-  padding: 8px 24px;
-  border-radius: 12px;
-  background: rgba(11,24,56,0.35);  /* tipis biar contrast aman di bg apapun */
-  border: 2px solid rgba(201,169,97,0.4);
-  z-index: 10;
-}
-
-.timer-display.is-paused {
-  color: #8B1E3F;               /* burgundy = paused/expired */
-  border-color: rgba(139,30,63,0.5);
-}
-
-/* 00:00 — pulse OFF (sesuai brief: SFX timeup main, lalu diam). */
-.timer-display.is-expired {
-  color: #8B1E3F;
-  border-color: rgba(139,30,63,0.5);
-}
-
-/* Sisa <= 10 detik (>0) — pulse halus scale 1.0↔1.08 + warna burgundy.
-   Dipasang/dilepas oleh timer.render() di stage.js. */
-.timer-display.is-warning {
-  color: #8B1E3F;
-  border-color: rgba(139,30,63,0.55);
-  animation: timer-warning-pulse 0.9s ease-in-out infinite;
-}
-@keyframes timer-warning-pulse {
-  0%, 100% { transform: scale(1.00); }
-  50%      { transform: scale(1.08); }
-}
-
-/* ---------- Deretan kartu (area bawah-tengah) ----------
-   Ditata flexbox; ukuran kartu auto-fit ke jumlah kartu via inline-style dari JS. */
-.cards-row {
-  position: absolute;
-  left: 160px;
-  right: 160px;                 /* lebar kerja = 1600px */
-  bottom: 60px;
-  height: 420px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 40px;
-  z-index: 5;
-}
-
-.card {
-  height: 100%;
-  /* max-width di-set dari JS supaya 3 atau 6 kartu sama-sama fit */
-  width: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 16px 28px rgba(0,0,0,0.55));
-}
-
-/* ---------- Wizco mascot (default: pojok kiri-bawah, ~280px tinggi) ---------- */
-.wizco {
-  position: absolute;
-  height: 280px;                /* ~26% dari 1080 — sesuai pilihan brief */
-  width: auto;
-  z-index: 6;
-  filter: drop-shadow(0 12px 20px rgba(0,0,0,0.5));
-  pointer-events: none;
-}
-.wizco.pos-bottom-left   { left: 40px;  bottom: 40px; }
-.wizco.pos-bottom-right  { right: 40px; bottom: 40px; }
-.wizco.pos-top-left      { left: 40px;  top: 40px;    }
-.wizco.pos-top-right     { right: 40px; top: 40px;    }
-
-/* ---------- Placeholder kalau gambar gagal load (dev only) ---------- */
-.placeholder-box {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: repeating-linear-gradient(
-    45deg,
-    #1a1a1a 0 20px,
-    #2a2a2a 20px 40px
-  );
-  color: #C9A961;
-  font-family: 'Courier New', monospace;
-  font-size: 24px;
-  padding: 40px;
-  text-align: center;
-  border: 4px dashed #C9A961;
-}
-/* Placeholder versi kartu — kecil, tetap di area card row */
-.card.placeholder-card {
-  background: repeating-linear-gradient(45deg, #1a1a1a 0 12px, #2a2a2a 12px 24px);
-  color: #C9A961;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  border: 2px dashed #C9A961;
-  padding: 12px;
-  text-align: center;
-  word-break: break-all;
-}
-
-/* =========================================================
-   CARD-REVEAL — tipe layar baru (Fase B)
-
-   Layout target:
-   - Background = .screen-image (gambar scene ronde, contain)
-   - .card-reveal-dim → overlay hitam 45% di atas bg
-   - .card-reveal-wrap → kontainer kartu, fixed height 756px (≈70% dari 1080)
-     di-center kanvas via absolute + translate(-50%,-50%).
-     Child .card-reveal-card pakai height:100% + width:auto → wrap inline-block
-     menyesuaikan width-nya (jaga aspect-ratio kartu, tidak gepeng).
-   - .card-reveal-glow → di belakang kartu (z-index lebih kecil),
-     scale 130% via height/width, mix-blend-mode screen agar glow nyatu.
-   - .card-reveal-stamp → di pojok kanan-atas kartu, sebagian OVERLAP keluar
-     batas kartu via translate(40%, -40%). Final rotasi -12° (set GSAP).
-   ========================================================= */
-.screen-card-reveal {
-  /* tidak ada style khusus di sini — anak-anaknya yang punya layout */
-}
-
-.card-reveal-dim {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 2;            /* di atas .screen-image (z auto), di bawah wrap */
-  pointer-events: none;
-}
-
-.card-reveal-wrap {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+/* ===== Stage (safe-area 1920x1080, di-scale via JS) ===== */
+#stage {
+  position: fixed; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
   transform: translate(-50%, -50%);
-  height: 756px;         /* ≈ 70% dari 1080 */
-  display: inline-block; /* width menyesuaikan child .card-reveal-card */
-  z-index: 3;
-  /* GSAP akan animate scale .card-reveal-card; wrap itself diam */
+  transform-origin: center;
+  z-index: 3; pointer-events: none;
+  outline: 1px dashed rgba(201,169,97,.25); /* bantu lihat safe-area, dihapus nanti */
 }
 
-.card-reveal-card {
-  display: block;
-  position: relative;    /* anchor untuk stamp absolute */
-  height: 100%;
-  width: auto;           /* lebar mengikuti natural ratio PNG kartu */
-  z-index: 2;            /* di atas glow, di bawah stamp */
-  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
-  transform-origin: center center;
+/* ===== Loading screen ===== */
+#loading-screen {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #0B1838; gap: 18px;
+}
+#loading-screen.hidden { display: none; }
+.loading-title { font-size: 52px; color: #C9A961; letter-spacing: 3px; }
+.loading-progress { font-size: 26px; }
+
+/* ===== Scene label (dev) ===== */
+#scene-label {
+  position: fixed; left: 22px; top: 18px; z-index: 20;
+  font-size: 22px; color: #C9A961; opacity: .85; text-shadow: 0 1px 3px #000;
 }
 
-.card-reveal-glow {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  height: 140%;          /* lebih besar dari kartu */
-  width: auto;           /* natural ratio (PNG glow biasanya square/circular) */
-  transform: translate(-50%, -50%);
-  z-index: 1;            /* di belakang kartu */
-  opacity: 0;            /* GSAP fade-in */
-  pointer-events: none;
-  mix-blend-mode: screen;/* glow nyatu dengan background */
+/* ===== HUD hint ===== */
+#hud-hint {
+  position: fixed; right: 18px; bottom: 14px; z-index: 20;
+  font-size: 16px; color: #C9A961;
+  background: rgba(11,24,56,.55); border: 1px solid rgba(201,169,97,.4);
+  padding: 6px 12px; border-radius: 8px;
 }
 
-.card-reveal-stamp {
-  position: absolute;
-  top: 0;
-  right: 0;
-  /* CATATAN: TIDAK set transform di CSS — GSAP yang handle anchor (xPercent/yPercent)
-     sekaligus animate scale/rotate dalam satu transform string. Kalau CSS punya
-     transform sendiri di sini, GSAP akan menimpanya saat .set/.fromTo dipanggil. */
-  height: 320px;         /* relatif terhadap kartu yang 756px tingginya */
-  width: auto;
-  z-index: 4;            /* paling depan */
-  opacity: 0;            /* GSAP slam-in */
-  pointer-events: none;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55));
-  transform-origin: center center;
+/* ===== Help overlay ===== */
+#help-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(5,6,10,.88);
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; font-size: 30px; line-height: 2; color: #F4E8C8;
 }
+#help-overlay.hidden { display: none; }
+
+.hidden { display: none !important; }
