@@ -21,8 +21,22 @@ const ASSETS = {
     r5: "assets/img/transition/transition-r5.png", r6: "assets/img/transition/transition-r6.png",
     r7: "assets/img/transition/transition-r7.png", r8: "assets/img/transition/transition-r8.png",
     r9: "assets/img/transition/transition-r9.png", bonus: "assets/img/transition/transition-bonus.png"
+  },
+  // V11 Fase 1 — aset shared/ui/wizco didaftarkan (path only, tanpa side-effect).
+  shared: {
+    glowGold: "assets/img/shared/glow-gold.png"
+  },
+  ui: {
+    speechBubble: "assets/img/ui/speech-bubble.png"
+  },
+  // Pose Wizco BARU — terdaftar supaya siap dipakai nanti (belum dipakai scene mana pun).
+  // present & bow OPSIONAL: kalau hilang, fallback ke explain (lihat devAssetCheck di stage.js).
+  wizco: {
+    explain: "assets/img/wizco/wizco-explain.png",
+    cheer:   "assets/img/wizco/wizco-cheer.png",
+    present: "assets/img/wizco/wizco-present.png", // opsional
+    bow:     "assets/img/wizco/wizco-bow.png"      // opsional
   }
-  // (cards/, shared/, audio/ ditambah di fase berikutnya)
 };
 
 // ============================================================
@@ -145,6 +159,7 @@ const AUDIO = {
     timerStart:    "assets/audio/sfx/sfx-02-submit.mp3",     // timer mulai
     timerTick:     "assets/audio/sfx/sfx-03-tick.mp3",       // detik terakhir (≤10s)
     timerEnd:      "assets/audio/sfx/sfx-04-timeup.mp3",     // 00:00
+    reveal:        "assets/audio/sfx/sfx-05-reveal.mp3",     // V11 — sting buka reveal (versi pendek)
     revealConfirm: "assets/audio/sfx/sfx-06-correct.mp3",    // kartu benar (CONFIRMED)
     revealRedFlag: "assets/audio/sfx/sfx-07-wrong.mp3",      // kartu trap (RED FLAG)
     win:           "assets/audio/sfx/sfx-14-fanfare.mp3"     // juara alloc

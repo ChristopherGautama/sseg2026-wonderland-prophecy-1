@@ -1705,8 +1705,58 @@
   }
 
   // ---------- f) Init ----------
+  // ---------- DEV) Cek aset WAJIB (V11 Fase 1) ----------
+  // Murni diagnostik saat load: console.warn untuk aset hilang/404, TANPA crash.
+  // Pakai new Image()/Audio() lokal — tidak ada fetch ke internet.
+  // Buka Console (F12): harus BERSIH dari warning [ASSET CHECK] untuk aset wajib.
+  function devAssetCheck() {
+    if (typeof ASSETS === "undefined" || typeof PANELS === "undefined") return;
+
+    // Daftar gambar WAJIB: transition r1..r9 + bonus, panel-bonus, glow-gold,
+    // speech-bubble, wizco-explain, wizco-cheer.
+    const required = [];
+    Object.values(ASSETS.transition).forEach((p) => required.push(p)); // r1..r9 + bonus
+    required.push(PANELS.bonus.soal);        // panel-bonus.png
+    required.push(ASSETS.shared.glowGold);   // glow-gold.png
+    required.push(ASSETS.ui.speechBubble);   // speech-bubble.png
+    required.push(ASSETS.wizco.explain);     // wizco-explain.png
+    required.push(ASSETS.wizco.cheer);       // wizco-cheer.png
+
+    const total = required.length;
+    let checked = 0, missing = 0;
+    function tick(ok, path) {
+      if (!ok) { console.warn("[ASSET CHECK] WAJIB hilang/404:", path); missing++; }
+      if (++checked === total && missing === 0) {
+        console.log("[ASSET CHECK] Semua aset gambar wajib OK ✓ (" + total + " file)");
+      }
+    }
+    required.forEach((path) => {
+      const img = new Image();
+      img.onload  = () => tick(true, path);
+      img.onerror = () => tick(false, path);
+      img.src = path;
+    });
+
+    // SFX reveal WAJIB (sfx-05-reveal.mp3).
+    const sfxReveal = (typeof AUDIO !== "undefined" && AUDIO.sfx && AUDIO.sfx.reveal)
+      ? AUDIO.sfx.reveal : "assets/audio/sfx/sfx-05-reveal.mp3";
+    const a = new Audio();
+    a.addEventListener("error", () => console.warn("[ASSET CHECK] WAJIB hilang/404:", sfxReveal));
+    a.src = sfxReveal;
+
+    // OPSIONAL — wizco-present & wizco-bow. Kalau hilang: info lembut + fallback explain,
+    // BUKAN warning keras.
+    [ASSETS.wizco.present, ASSETS.wizco.bow].forEach((path) => {
+      if (!path) return;
+      const im = new Image();
+      im.onerror = () => console.info("[ASSET CHECK] (opsional) tak ada → fallback wizco-explain:", path);
+      im.src = path;
+    });
+  }
+
   function init() {
     fillHelp();
+    devAssetCheck();           // V11 Fase 1 — verifikasi aset wajib (diagnostik, non-crash)
     makeRevealNote();          // Fase C2 — siapkan banner headline note
     preloadSfx();              // Fase C3 — warm cache SFX
     resizeStage();
