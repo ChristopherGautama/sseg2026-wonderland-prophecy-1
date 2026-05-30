@@ -976,3 +976,69 @@ html, body {
   pointer-events: none; will-change: transform, opacity;
   filter: drop-shadow(0 0 6px rgba(244, 215, 122, 0.7));
 }
+
+/* ============================================================
+   FASE 9 (v10) — REVEAL R2–Bonus (multi-pick, alokasi, overlay tematik)
+   Semua diterapkan ke .soal-card; tak menyentuh reveal R1.
+   ============================================================ */
+
+/* MULTI — kartu trap: red-flag + retak + redup */
+.soal-slot.rv-trap .soal-card { opacity: 0.5; filter: grayscale(0.7); }
+.soal-crack {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: 12px;
+  z-index: 3; pointer-events: none; opacity: 0.6;
+  animation: rvCrackIn 0.4s ease both;
+}
+@keyframes rvCrackIn { from { opacity: 0; } to { opacity: 0.6; } }
+
+/* ALOKASI — kartu naik (hijau) / turun (merah) */
+.soal-slot.rv-up .soal-card {
+  transform: translateY(-12px) scale(1.04);
+  border-color: rgba(46, 125, 91, 0.95);
+  box-shadow: 0 0 40px rgba(46, 125, 91, 0.7), 0 0 80px rgba(46, 125, 91, 0.35);
+}
+.soal-slot.rv-down .soal-card {
+  filter: saturate(0.75) brightness(0.92);
+  border-color: rgba(192, 57, 43, 0.8);
+  box-shadow: 0 0 30px rgba(192, 57, 43, 0.45);
+}
+
+/* Badge delta hasil (alokasi): hijau #2E7D5B naik · merah #C0392B turun */
+.soal-delta {
+  position: absolute; bottom: -26px; left: 50%;
+  transform: translateX(-50%);
+  min-width: 96px; padding: 8px 20px;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 32px;
+  text-align: center; border-radius: 24px; z-index: 5;
+  color: #F4E8C8; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(244, 232, 200, 0.75);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.soal-delta-up   { background: #2E7D5B; }
+.soal-delta-down { background: #C0392B; }
+
+/* Overlay dekoratif tematik (di sekitar/belakang panel; tak nutupi kartu) */
+.soal-reveal-overlay {
+  position: absolute; left: 50%; top: 0;
+  transform: translateX(-50%);
+  width: 76%; height: 66%;
+  z-index: 1; pointer-events: none;
+}
+.soal-reveal-fx {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 100%; max-height: 100%; width: auto; height: auto;
+  opacity: 0; pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Maskot Wizco celebrate (muncul sebentar saat reveal non-alokasi) */
+.soal-celebrate {
+  position: absolute; left: 40px; bottom: 0;
+  height: 340px; width: auto;
+  z-index: 6; pointer-events: none;
+  display: none; opacity: 0;
+  filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
+}
+.soal-celebrate.show { display: block; }

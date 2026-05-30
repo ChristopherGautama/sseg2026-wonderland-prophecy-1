@@ -65,6 +65,7 @@
   const boardPanel = boardEl.querySelector(".board-panel");
   const soalCardsEl = boardEl.querySelector(".soal-cards");
   const soalShowcaseEl = boardEl.querySelector(".soal-showcase");
+  const celebrateEl = boardEl.querySelector(".soal-celebrate");
   const BOARD_STATE_B = { scale: 0.66, y: -186 };  // shrink + naik ke atas-tengah
 
   // Poses Wizco per konteks (aset di assets/img/wizco/).
@@ -102,9 +103,10 @@
   let roundActive = false;   // scene ronde (papan soal) sedang tampil?
   let soalStep = 0;          // 0=STATE A · 1..N=showcase · N+1=diskusi · N+2=reveal
 
-  // Fase 8 (v10) — state reveal R1
+  // Fase 8/9 (v10) — state reveal
   let revealParticleTimer = null;  // setInterval spawn spark reveal
   let revealStampTimer = null;     // setTimeout stamp setelah flip selesai
+  let revealCelebrateTimer = null; // setTimeout sembunyikan wizco celebrate
 
   // Fase B — state timer
   let timerKey = null;       // key ronde aktif (null = tidak ada timer di scene ini)
@@ -757,10 +759,10 @@
     return false;                               // soalStep === N+2 (reveal tampil) → advance
   }
 
-  // Ronde punya tahap reveal? config-driven: hanya yg punya PANELS[key].reveal.
-  // Fase 8 → baru R1 yang punya (panel-r1-reveal.png); ronde lain reveal:null.
+  // Ronde punya tahap reveal? config-driven: semua ronde yg punya answer key.
+  // R1 flip 2 papan (PANELS.r1.reveal); R2–Bonus panel tetap + stamp/delta (Fase 9).
   function hasReveal(key) {
-    return !!(typeof PANELS !== "undefined" && PANELS[key] && PANELS[key].reveal);
+    return !!(typeof ANSWERS !== "undefined" && ANSWERS[key]);
   }
 
   // ← di dalam ronde: snap mundur satu langkah (tanpa animasi).
@@ -793,6 +795,30 @@
   const REVEAL_SFX  = "assets/audio/sfx/sfx-05-reveal.mp3";
   const REVEAL_STING = "assets/audio/music/m04-reveal-sting.mp3";
   const REVEAL_SPARK = "assets/img/shared/particle-goldspark.png";
+
+  // Fase 9 — stamp set + overlay tematik per ronde + maskot celebrate.
+  const STAMP = {
+    ok:      "assets/img/shared/stamp-confirmed.png",
+    healthy: "assets/img/shared/stamp-healthy.png",
+    bad:     "assets/img/shared/stamp-red-flag.png",
+    crack:   "assets/img/shared/overlay-cracked.png"
+  };
+  const WIZCO_CELEBRATE = "assets/img/wizco/wizco-celebrate.png";
+  // Overlay dekoratif per ronde (path relatif ke assets/img/shared/). 404 → di-skip.
+  const ROUND_FX = {
+    r2: [],
+    r3: ["race/race-goldilocks-glow.png", "race/race-winner-speed-trail.png", "race/race-finish-line.png"],
+    r4: ["portfolio/portfolio-rate-cut-glow.png", "portfolio/portfolio-coin-cascade.png"],
+    r5: ["blackswan/black-swan-storm-overlay.png", "blackswan/black-swan-crisis-glow.png",
+         "fx-lightning.png", "blackswan/black-swan-wise-trio-glow.png"],
+    r6: ["catalyst/catalyst-bull-rally-trail.png", "catalyst/catalyst-golden-trio-glow.png",
+         "catalyst/catalyst-winner-laurel.png"],
+    r7: ["earnings/earnings-spotlight-gold.png", "earnings/earnings-balance-scale.png"],
+    r8: ["devaluation/devaluation-currency-shock.png", "devaluation/devaluation-exporter-glow.png",
+         "portfolio/portfolio-coin-cascade.png", "fx-lightning.png"],
+    r9: ["ipo/ipo-confetti-gold.png", "ipo/ipo-opening-bell.png"],
+    bonus: ["fx-lightning.png"]
+  };
 
   // One-shot audio langsung (tidak menyentuh AudioEngine/manifest), hormati state.
   function playOneShot(src, vol) {
@@ -868,37 +894,183 @@
     }
   }
 
-  // Masuk REVEAL: flip panel → (saat flip selesai) glow/particle + sfx + stamp.
+  // Masuk REVEAL. R1 (punya papan reveal) → flip 2 papan (PERILAKU TETAP, Fase 8).
+  // R2–Bonus → panel tetap, FX tematik + stamp/delta per tipe (Fase 9).
   function doSoalReveal(animate) {
     const key = currentKey;
-    if (!hasReveal(key)) return;
-    flipPanelTo(PANELS[key].reveal, animate);
+    const ans = (typeof ANSWERS !== "undefined") ? ANSWERS[key] : null;
+    if (!ans) return;
+
+    // ---- R1: flip soal→reveal (jangan diubah) ----
+    if (typeof PANELS !== "undefined" && PANELS[key] && PANELS[key].reveal) {
+      flipPanelTo(PANELS[key].reveal, animate);
+      if (animate) {
+        revealStampTimer = setTimeout(() => {
+          spawnRevealFx();
+          playOneShot(REVEAL_SFX, SFX_VOL);
+          playOneShot(REVEAL_STING, 0.4);
+          applyAnswerStamp(true);
+        }, 800);
+      } else {
+        spawnRevealFx();
+        applyAnswerStamp(false);
+      }
+      return;
+    }
+
+    // ---- R2–Bonus: panel tetap; FX tematik + stamp/delta per tipe ----
     if (animate) {
-      // Semua efek menyala SAAT FLIP SELESAI (~0.8s), bukan saat mulai.
       revealStampTimer = setTimeout(() => {
         spawnRevealFx();
+        addRoundOverlays(key);
         playOneShot(REVEAL_SFX, SFX_VOL);
-        playOneShot(REVEAL_STING, 0.4);          // sting reveal (opsional, lebih pelan)
-        applyAnswerStamp(true);
-      }, 800);
+        playOneShot(REVEAL_STING, 0.4);
+        applyAnswerReveal(ans, key, true);
+        if (ans.type !== "alloc") showCelebrateWizco();   // maskot utk non-alokasi
+      }, 80);
     } else {
       spawnRevealFx();
-      applyAnswerStamp(false);
+      addRoundOverlays(key);
+      applyAnswerReveal(ans, key, false);
     }
   }
 
-  // Bersihkan FX reveal → panel balik ke soal, stamp & dim hilang. Aman selalu.
+  // Router visual jawaban per tipe (config-driven; tak ada hardcode jawaban).
+  function applyAnswerReveal(ans, key, animate) {
+    if (ans.type === "alloc") revealAllocDelta(ans, animate);
+    else if (ans.type === "multi" && key !== "bonus") revealMultiPick(ans, key, animate);
+    else applyAnswerStamp(animate);          // single (r2/r3) + bonus (2 benar)
+  }
+
+  // Tempel stamp ke kartu + animasi pop (stagger via delay). cls = rv-correct/rv-trap.
+  function addStampToSlot(idx, src, cls, delay, animate) {
+    const slot = soalCardsEl.children[idx];
+    if (!slot) return;
+    slot.classList.add(cls);
+    const stamp = document.createElement("img");
+    stamp.className = "soal-stamp"; stamp.alt = ""; stamp.src = src;
+    stamp.onerror = () => stamp.remove();
+    slot.appendChild(stamp);
+    if (window.gsap && animate) {
+      gsap.fromTo(stamp,
+        { opacity: 0, scale: 1.6, rotation: -18, xPercent: -50, yPercent: -50 },
+        { opacity: 1, scale: 1, rotation: -8, xPercent: -50, yPercent: -50,
+          duration: 0.5, ease: "back.out(2)", delay: delay, transformOrigin: "50% 50%" });
+    }
+  }
+  function addCrackToSlot(idx) {
+    const slot = soalCardsEl.children[idx];
+    if (!slot) return;
+    const c = document.createElement("img");
+    c.className = "soal-crack"; c.alt = ""; c.src = STAMP.crack;
+    c.onerror = () => c.remove();
+    slot.appendChild(c);
+  }
+
+  // MULTI 3-of-6 (R5/R6/R7): trio benar (healthy utk R7) + trap red-flag, stagger.
+  function revealMultiPick(ans, key, animate) {
+    const correct = ans.correct || [];
+    const trap = ans.trap || [];
+    const okStamp = (key === "r7") ? STAMP.healthy : STAMP.ok;
+    correct.forEach((idx, n) => addStampToSlot(idx, okStamp, "rv-correct", n * 0.18, animate));
+    const base = correct.length * 0.18;
+    trap.forEach((idx, n) => {
+      addStampToSlot(idx, STAMP.bad, "rv-trap", base + n * 0.18, animate);
+      if (key === "r5") addCrackToSlot(idx);             // R5: kartu trap retak
+    });
+  }
+
+  // ALOKASI (R4/R8/R9): badge delta dari config, hijau naik / merah turun. Tanpa stamp.
+  function formatDelta(raw) {
+    let s = String(raw).trim();
+    if (s.charAt(0) !== "+" && s.charAt(0) !== "-") s = "+" + s;
+    return s + "%";
+  }
+  function revealAllocDelta(ans, animate) {
+    const results = ans.results || [];
+    results.forEach((r, n) => {
+      const slot = soalCardsEl.children[r.i];
+      if (!slot) return;
+      const positive = String(r.delta).trim().charAt(0) !== "-";
+      slot.classList.add(positive ? "rv-up" : "rv-down");
+      const badge = document.createElement("div");
+      badge.className = "soal-delta " + (positive ? "soal-delta-up" : "soal-delta-down");
+      badge.textContent = formatDelta(r.delta);
+      slot.appendChild(badge);
+      if (window.gsap && animate) {
+        gsap.fromTo(badge,
+          { opacity: 0, scale: 0.6, y: 18, xPercent: -50 },
+          { opacity: 1, scale: 1, y: 0, xPercent: -50, duration: 0.5,
+            ease: "back.out(2)", delay: n * 0.16, transformOrigin: "50% 50%" });
+      }
+    });
+  }
+
+  // Overlay dekoratif tematik per ronde (di sekitar/belakang panel, 404-safe).
+  function addRoundOverlays(key) {
+    const list = (ROUND_FX[key] || []);
+    if (!list.length) return;
+    const layer = document.createElement("div");
+    layer.className = "soal-reveal-overlay";
+    boardEl.appendChild(layer);
+    list.forEach((rel, n) => {
+      const img = document.createElement("img");
+      img.className = "soal-reveal-fx"; img.alt = "";
+      img.src = "assets/img/shared/" + rel;
+      img.onerror = () => img.remove();                  // aset 404 → skip aman
+      layer.appendChild(img);
+      if (window.gsap) {
+        gsap.fromTo(img, { opacity: 0 },
+          { opacity: 0.62, duration: 0.7, ease: "power2.out", delay: n * 0.12 });
+      } else {
+        img.style.opacity = "0.62";
+      }
+    });
+  }
+
+  // Maskot Wizco celebrate muncul sebentar (ronde non-alokasi).
+  function showCelebrateWizco() {
+    if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
+    celebrateEl.src = WIZCO_CELEBRATE;
+    celebrateEl.onerror = () => celebrateEl.classList.remove("show");
+    celebrateEl.classList.add("show");
+    if (window.gsap) {
+      gsap.fromTo(celebrateEl,
+        { opacity: 0, x: -90, scale: 0.9 },
+        { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: "back.out(1.6)" });
+    }
+    revealCelebrateTimer = setTimeout(hideCelebrateWizco, 2800);
+  }
+  function hideCelebrateWizco() {
+    if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
+    if (window.gsap) {
+      gsap.to(celebrateEl, { opacity: 0, duration: 0.4,
+        onComplete: () => celebrateEl.classList.remove("show") });
+    } else {
+      celebrateEl.classList.remove("show");
+    }
+  }
+
+  // Bersihkan FX reveal → panel balik ke soal, stamp/delta/glow/maskot hilang. Aman selalu.
   function clearSoalReveal() {
     if (revealParticleTimer) { clearInterval(revealParticleTimer); revealParticleTimer = null; }
     if (revealStampTimer) { clearTimeout(revealStampTimer); revealStampTimer = null; }
-    boardEl.querySelectorAll(".soal-reveal-glow, .soal-reveal-particles").forEach((e) => e.remove());
-    if (window.gsap) { gsap.killTweensOf(boardPanel); gsap.set(boardPanel, { rotationY: 0 }); }
+    if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
+    boardEl.querySelectorAll(".soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay")
+      .forEach((e) => e.remove());
+    if (window.gsap) {
+      gsap.killTweensOf(boardPanel);
+      gsap.set(boardPanel, { rotationY: 0 });
+      gsap.killTweensOf(celebrateEl);
+    }
+    celebrateEl.classList.remove("show");
+    celebrateEl.style.opacity = "";
     if (currentKey && typeof PANELS !== "undefined" && PANELS[currentKey] && PANELS[currentKey].soal) {
       boardPanel.src = PANELS[currentKey].soal;
     }
     soalCardsEl.querySelectorAll(".soal-slot").forEach((slot) => {
-      slot.classList.remove("rv-correct", "rv-dim");
-      slot.querySelectorAll(".soal-stamp").forEach((s) => s.remove());
+      slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down");
+      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta").forEach((s) => s.remove());
     });
   }
 
