@@ -793,7 +793,8 @@
   // Panel flip soal→reveal + glow/particle + stamp jawaban benar (dari config).
   // ============================================================
   const REVEAL_SFX  = "assets/audio/sfx/sfx-05-reveal.mp3";
-  const REVEAL_STING = "assets/audio/music/m04-reveal-sting.mp3";
+  // V11 Fase 2 — sting panjang m04 TIDAK lagi dipakai saat reveal (bikin numpuk/kepanjangan).
+  const REVEAL_STING = "assets/audio/music/m04-reveal-sting.mp3"; // (tidak dipakai)
   const REVEAL_SPARK = "assets/img/shared/particle-goldspark.png";
 
   // Fase 9 — stamp set + overlay tematik per ronde + maskot celebrate.
@@ -841,32 +842,48 @@
       .to(boardPanel, { rotationY: 0, duration: 0.4, ease: "power2.out" });
   }
 
-  // Glow + particle emas di sekitar panel (atas-tengah).
+  // V11 Fase 2 — FX reveal: radial flash singkat + burst partikel SEKALI.
+  // TIDAK ada lagi "piringan glow-gold besar" di belakang panel, dan TIDAK ada loop.
   function spawnRevealFx() {
-    const glow = document.createElement("img");
-    glow.className = "soal-reveal-glow"; glow.alt = ""; glow.src = FX.glow;
-    glow.onerror = () => glow.remove();
-    boardEl.appendChild(glow);
+    // 1) Radial flash singkat (pure CSS gradient, BUKAN gambar → aman walau aset hilang).
+    //    opacity 0 → 0.8 → 0, total ~0.3s, lalu elemen dibuang.
+    const flash = document.createElement("div");
+    flash.className = "soal-reveal-flash";
+    boardEl.appendChild(flash);
+    if (window.gsap) {
+      gsap.fromTo(flash, { opacity: 0 },
+        { opacity: 0.8, duration: 0.12, ease: "power2.out",
+          onComplete() {
+            gsap.to(flash, { opacity: 0, duration: 0.18, ease: "power2.in",
+              onComplete() { flash.remove(); } });
+          } });
+    } else {
+      setTimeout(() => flash.remove(), 300);
+    }
 
+    // 2) Burst partikel goldspark SEKALI (muncul → naik → fade → hapus). Tanpa setInterval.
     const wrap = document.createElement("div");
     wrap.className = "soal-reveal-particles";
     boardEl.appendChild(wrap);
-    const spawn = () => {
-      if (wrap.children.length >= 18) return;
+    let alive = 0;
+    for (let i = 0; i < 14; i++) {
       const s = document.createElement("img");
       s.className = "soal-reveal-spark"; s.alt = ""; s.src = REVEAL_SPARK;
-      s.onerror = () => s.remove();
-      const dur = 5 + Math.random() * 5;
+      s.onerror = () => { s.remove(); if (--alive <= 0 && !wrap.children.length) wrap.remove(); };
+      const dur = 0.9 + Math.random() * 0.7;
       s.style.left = (Math.random() * 100) + "%";
       s.style.width = (10 + Math.random() * 18) + "px";
-      s.style.setProperty("--sp-rise", (260 + Math.random() * 320) + "px");
+      s.style.setProperty("--sp-rise", (200 + Math.random() * 260) + "px");
       s.style.setProperty("--sp-drift", (Math.random() * 100 - 50) + "px");
       s.style.setProperty("--sp-op", (0.5 + Math.random() * 0.5).toFixed(2));
-      s.style.animation = "sparkFloat " + dur.toFixed(2) + "s linear infinite";
+      s.style.animation = "sparkBurst " + dur.toFixed(2) + "s ease-out " +
+                          (Math.random() * 0.12).toFixed(2) + "s forwards";
+      s.addEventListener("animationend", () => { s.remove(); if (--alive <= 0) wrap.remove(); });
       wrap.appendChild(s);
-    };
-    for (let i = 0; i < 8; i++) spawn();
-    revealParticleTimer = setInterval(spawn, 480);
+      alive++;
+    }
+    // Safety net: buang wrap kalau ada spark yg gagal animate (mis. aset 404).
+    revealParticleTimer = setTimeout(() => { if (wrap.parentNode) wrap.remove(); }, 2200);
   }
 
   // Stamp CONFIRMED di kartu benar (dari ANSWERS) + redupkan kartu lain.
@@ -907,8 +924,7 @@
       if (animate) {
         revealStampTimer = setTimeout(() => {
           spawnRevealFx();
-          playOneShot(REVEAL_SFX, SFX_VOL);
-          playOneShot(REVEAL_STING, 0.4);
+          playOneShot(REVEAL_SFX, SFX_VOL);   // V11 — HANYA sfx-05 (pendek); sting panjang dihentikan
           applyAnswerStamp(true);
         }, 800);
       } else {
@@ -923,8 +939,7 @@
       revealStampTimer = setTimeout(() => {
         spawnRevealFx();
         addRoundOverlays(key);
-        playOneShot(REVEAL_SFX, SFX_VOL);
-        playOneShot(REVEAL_STING, 0.4);
+        playOneShot(REVEAL_SFX, SFX_VOL);   // V11 — HANYA sfx-05 (pendek); sting panjang dihentikan
         applyAnswerReveal(ans, key, true);
         if (ans.type !== "alloc") showCelebrateWizco();   // maskot utk non-alokasi
       }, 80);
@@ -1053,10 +1068,10 @@
 
   // Bersihkan FX reveal → panel balik ke soal, stamp/delta/glow/maskot hilang. Aman selalu.
   function clearSoalReveal() {
-    if (revealParticleTimer) { clearInterval(revealParticleTimer); revealParticleTimer = null; }
+    if (revealParticleTimer) { clearTimeout(revealParticleTimer); revealParticleTimer = null; }
     if (revealStampTimer) { clearTimeout(revealStampTimer); revealStampTimer = null; }
     if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
-    boardEl.querySelectorAll(".soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay")
+    boardEl.querySelectorAll(".soal-reveal-flash, .soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay")
       .forEach((e) => e.remove());
     if (window.gsap) {
       gsap.killTweensOf(boardPanel);

@@ -967,17 +967,22 @@ html, body {
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
 }
 
-/* Glow emas di sekitar panel saat reveal (atas-tengah, denyut) */
-.soal-reveal-glow {
+/* V11 Fase 2 — RADIAL FLASH singkat saat reveal (pure CSS gradient, BUKAN gambar).
+   Menggantikan "piringan glow-gold besar" lama. Opacity di-animate via GSAP (0→0.8→0). */
+.soal-reveal-flash {
   position: absolute; left: 50%; top: 33%;
-  width: 1280px; max-width: 86%; height: auto;
+  width: 1280px; max-width: 86%; height: 720px; max-height: 70%;
   transform: translate(-50%, -50%);
-  z-index: 1; pointer-events: none;
+  z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at center,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(244, 215, 122, 0.60) 28%,
+    rgba(201, 169, 97, 0.25) 50%,
+    rgba(201, 169, 97, 0) 70%);
   mix-blend-mode: screen;
-  animation: opGlowIn 0.8s ease forwards, opGlowPulse 4s ease-in-out 0.8s infinite;
 }
 
-/* Partikel goldspark di sekitar panel saat reveal */
+/* Partikel goldspark di sekitar panel saat reveal (burst sekali) */
 .soal-reveal-particles {
   position: absolute; left: 50%; top: 0;
   width: 1300px; max-width: 86%; height: 70%;
@@ -989,6 +994,13 @@ html, body {
   width: 14px; height: auto; opacity: 0;
   pointer-events: none; will-change: transform, opacity;
   filter: drop-shadow(0 0 6px rgba(244, 215, 122, 0.7));
+}
+/* Burst SEKALI: muncul → naik → fade (forwards, bukan infinite) */
+@keyframes sparkBurst {
+  0%   { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+  20%  { opacity: var(--sp-op, 0.85); }
+  100% { transform: translateY(calc(-1 * var(--sp-rise, 240px)))
+                    translateX(var(--sp-drift, 0px)) scale(1); opacity: 0; }
 }
 
 /* ============================================================
