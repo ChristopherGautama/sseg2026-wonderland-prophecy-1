@@ -25,6 +25,27 @@ const ASSETS = {
   // (cards/, shared/, audio/ ditambah di fase berikutnya)
 };
 
+// ============================================================
+// PANELS — papan soal (board) per ronde. Key cocok dengan SCENES.key.
+// Tiap entry: { soal, reveal }. Hanya R1 yang punya papan reveal sendiri;
+// sisanya reveal:null (pakai papan soal-nya saja saat reveal).
+// CATATAN: ini hanya data path — tidak ada side-effect di sini.
+// Saat dipakai (fase berikutnya), set img.onerror → console.warn supaya
+// papan yang belum ada tidak bikin crash (pola sama spt stage.js).
+// ============================================================
+const PANELS = {
+  r1:    { soal: "assets/img/panels/panel-r1-soal.png", reveal: "assets/img/panels/panel-r1-reveal.png" },
+  r2:    { soal: "assets/img/panels/panel-r2.png",      reveal: null },
+  r3:    { soal: "assets/img/panels/panel-r3.png",      reveal: null },
+  r4:    { soal: "assets/img/panels/panel-r4.png",      reveal: null },
+  r5:    { soal: "assets/img/panels/panel-r5.png",      reveal: null },
+  r6:    { soal: "assets/img/panels/panel-r6.png",      reveal: null },
+  r7:    { soal: "assets/img/panels/panel-r7.png",      reveal: null },
+  r8:    { soal: "assets/img/panels/panel-r8.png",      reveal: null },
+  r9:    { soal: "assets/img/panels/panel-r9.png",      reveal: null },
+  bonus: { soal: "assets/img/panels/panel-bonus.png",  reveal: null }
+};
+
 const SCENES = [
   { name: "Opening", type: "bg", key: "opening" },
   { name: "Transition I", type: "transition", key: "r1" }, { name: "Round 1", type: "bg", key: "r1" },
