@@ -64,6 +64,7 @@
   const boardDim = boardEl.querySelector(".board-dim");
   const boardPanel = boardEl.querySelector(".board-panel");
   const soalCardsEl = boardEl.querySelector(".soal-cards");
+  const soalShowcaseEl = boardEl.querySelector(".soal-showcase");
   const BOARD_STATE_B = { scale: 0.66, y: -186 };  // shrink + naik ke atas-tengah
 
   // Poses Wizco per konteks (aset di assets/img/wizco/).
@@ -548,6 +549,14 @@
   // Tidak menyentuh sistem reveal lama (doReveal) — itu Fase 8.
   // ============================================================
 
+  // Fase 5b — alur showcase kartu satu-per-satu (MC bacakan tiap pilihan).
+  //   soalStep 0           = STATE A (papan masuk)
+  //   soalStep 1..N        = STATE B, kartu[soalStep-1] BESAR di tengah,
+  //                          kartu[0..soalStep-2] sudah menetap di band
+  //   soalStep N+1         = "diskusi": semua kartu di band, spotlight-dim hilang
+  //   SPACE saat N+1       → lanjut scene (lewat navigasi yang ada)
+  const SHOWCASE_GLOW = "assets/img/shared/glow-gold.png";
+
   // Masuk scene ronde → STATE A (papan masuk).
   function enterRoundSoal(item) {
     const key = item.key;
@@ -563,9 +572,12 @@
     boardPanel.onerror = () => { boardPanel.style.display = "none"; };
     if (soalPath) boardPanel.src = soalPath;
 
-    buildBandCards();                 // kartu band (tersembunyi hingga STATE B)
+    buildBandSkeleton();              // slot band ter-reserve (invisible) → kiri→kanan
+    soalShowcaseEl.innerHTML = "";    // belum ada kartu besar di STATE A
+    soalCardsEl.style.opacity = "1";
     boardEl.classList.add("active");
-    applySoalState(0, false);         // pasang STATE A (instan), lalu intro
+    setPanel(false, false);           // papan BESAR di tengah
+    setDim("full", false);
     playBoardIntro();
   }
 
@@ -574,22 +586,22 @@
     if (!roundActive) { boardEl.classList.remove("active"); return; }
     roundActive = false;
     soalStep = 0;
-    if (window.gsap) gsap.killTweensOf([boardPanel, boardDim, soalCardsEl]);
-    boardEl.classList.remove("active");
+    if (window.gsap) gsap.killTweensOf([boardPanel, boardDim]);
+    stageEl.querySelectorAll(".soal-flyer").forEach((f) => f.remove());
+    soalShowcaseEl.innerHTML = "";
     soalCardsEl.innerHTML = "";
-    soalCardsEl.style.opacity = "0";
+    boardEl.classList.remove("active");
     boardDim.style.opacity = "";
     if (window.gsap) gsap.set(boardPanel, { clearProps: "all" });
   }
 
-  // Bangun kartu band dari mapping config (CARDS) + badge (CARD_BADGES).
-  function buildBandCards() {
+  // Skeleton band: N slot ter-reserve (visibility hidden) → layout stabil & terpusat.
+  function buildBandSkeleton() {
     soalCardsEl.innerHTML = "";
     soalCardsEl.dataset.count = roundCards.length;
     roundCards.forEach((path, i) => {
-      const wrap = document.createElement("div");
-      wrap.className = "soal-card-wrap";
-      wrap.style.opacity = "0";
+      const slot = document.createElement("div");
+      slot.className = "soal-slot";
       const img = document.createElement("img");
       img.className = "soal-card";
       img.src = path;
@@ -597,10 +609,35 @@
       const badge = document.createElement("div");
       badge.className = "soal-badge";
       badge.textContent = (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
-      wrap.appendChild(img);
-      wrap.appendChild(badge);
-      soalCardsEl.appendChild(wrap);
+      slot.appendChild(img);
+      slot.appendChild(badge);
+      soalCardsEl.appendChild(slot);
     });
+  }
+  function settleBandSlot(i) {
+    const slot = soalCardsEl.children[i];
+    if (slot) slot.classList.add("settled");
+  }
+
+  // Papan: BESAR di tengah (small=false) / mengecil & naik (small=true).
+  function setPanel(small, animate) {
+    const dur = animate ? 0.9 : 0;
+    if (window.gsap) {
+      gsap.to(boardPanel, small
+        ? { scale: BOARD_STATE_B.scale, y: BOARD_STATE_B.y, duration: dur, ease: "power2.inOut", transformOrigin: "50% 50%" }
+        : { scale: 1, y: 0, duration: dur, ease: "power2.inOut", transformOrigin: "50% 50%" });
+    } else {
+      boardPanel.style.transform = small
+        ? "scale(" + BOARD_STATE_B.scale + ") translateY(" + BOARD_STATE_B.y + "px)"
+        : "scale(1)";
+    }
+  }
+  // Overlay dim: 'full' (STATE A) · 'soft' (showcase ~0.35) · 'none' (diskusi).
+  function setDim(level, animate) {
+    const op = level === "full" ? 1 : level === "soft" ? 0.5 : 0;
+    const dur = animate ? 0.6 : 0;
+    if (window.gsap) gsap.to(boardDim, { opacity: op, duration: dur, ease: "power2.inOut" });
+    else boardDim.style.opacity = String(op);
   }
 
   // Animasi MASUK STATE A: board scale 0.92→1 + fade + glow (power3.out ~1s).
@@ -618,50 +655,114 @@
     }
   }
 
-  // Toggle STATE A↔B. target 0=A, 1=B. animate=true → transisi GSAP ~0.9s.
-  function applySoalState(target, animate) {
-    soalStep = target;
-    if (window.gsap) {
-      const dimDur = animate ? 0.6 : 0;
-      const moveDur = animate ? 0.9 : 0;
-      if (target === 1) {
-        gsap.to(boardDim, { opacity: 0, duration: dimDur, ease: "power2.inOut" });
-        gsap.to(boardPanel, { scale: BOARD_STATE_B.scale, y: BOARD_STATE_B.y,
-          duration: moveDur, ease: "power2.inOut", transformOrigin: "50% 50%" });
-        showBandCards(animate);
-      } else {
-        gsap.to(boardDim, { opacity: 1, duration: dimDur, ease: "power2.inOut" });
-        gsap.to(boardPanel, { scale: 1, y: 0,
-          duration: moveDur, ease: "power2.inOut", transformOrigin: "50% 50%" });
-        hideBandCards();
-      }
+  // Tampilkan kartu[i] BESAR di tengah + spotlight glow (scale 0.9→1 + fade).
+  function showBigCard(i, animate) {
+    soalShowcaseEl.innerHTML = "";
+    const spot = document.createElement("img");
+    spot.className = "soal-spot"; spot.alt = ""; spot.src = SHOWCASE_GLOW;
+    spot.onerror = () => spot.remove();
+    soalShowcaseEl.appendChild(spot);
+
+    const inner = document.createElement("div");
+    inner.className = "soal-showcase-inner";
+    const img = document.createElement("img");
+    img.className = "soal-showcase-card"; img.alt = "";
+    img.src = roundCards[i];
+    img.onerror = () => console.warn("Kartu gagal dimuat:", roundCards[i]);
+    const badge = document.createElement("div");
+    badge.className = "soal-showcase-badge";
+    badge.textContent = (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
+    inner.appendChild(img);
+    inner.appendChild(badge);
+    soalShowcaseEl.appendChild(inner);
+
+    if (window.gsap && animate) {
+      gsap.fromTo(inner, { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out", transformOrigin: "50% 50%" });
+      gsap.fromTo(spot, { opacity: 0 }, { opacity: 0.7, duration: 0.7, ease: "power2.out" });
     } else {
-      boardDim.style.opacity = target === 1 ? "0" : "1";
-      boardPanel.style.transform = target === 1
-        ? "scale(" + BOARD_STATE_B.scale + ") translateY(" + BOARD_STATE_B.y + "px)"
-        : "scale(1)";
-      if (target === 1) showBandCards(false); else hideBandCards();
+      inner.style.opacity = "1"; spot.style.opacity = "0.7";
     }
   }
 
-  // Kartu band muncul (stagger 0.12s, power3.out).
-  function showBandCards(animate) {
-    soalCardsEl.style.opacity = "1";
-    const cards = soalCardsEl.querySelectorAll(".soal-card-wrap");
-    if (window.gsap && animate) {
-      gsap.killTweensOf(cards);
-      gsap.fromTo(cards,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.5, ease: "power3.out", stagger: 0.12 });
+  // Kartu besar MENGECIL & terbang (FLIP) ke slot-nya di band, lalu menetap.
+  function flyShowcaseToSlot(i) {
+    const bigImg = soalShowcaseEl.querySelector(".soal-showcase-card");
+    const slot = soalCardsEl.children[i];
+    const slotImg = slot ? slot.querySelector(".soal-card") : null;
+    if (!slotImg) { settleBandSlot(i); soalShowcaseEl.innerHTML = ""; return; }
+
+    const to = rectInStage(slotImg);
+    const from = bigImg ? rectInStage(bigImg) : to;
+
+    const flyer = document.createElement("img");
+    flyer.className = "soal-flyer";
+    flyer.src = roundCards[i];
+    setRect(flyer, from);
+    stageEl.appendChild(flyer);
+    soalShowcaseEl.innerHTML = "";    // kartu besar digantikan flyer
+
+    const finish = () => { flyer.remove(); settleBandSlot(i); };
+    if (window.gsap) {
+      gsap.to(flyer, {
+        left: to.left, top: to.top, width: to.width, height: to.height,
+        duration: 0.6, ease: "power2.inOut", onComplete: finish
+      });
     } else {
-      cards.forEach((c) => { c.style.opacity = "1"; c.style.transform = "none"; });
+      flyer.style.transition = "left .6s ease, top .6s ease, width .6s ease, height .6s ease";
+      requestAnimationFrame(() => setRect(flyer, to));
+      setTimeout(finish, 640);
     }
   }
-  function hideBandCards() {
-    soalCardsEl.style.opacity = "0";
-    const cards = soalCardsEl.querySelectorAll(".soal-card-wrap");
-    if (window.gsap) gsap.set(cards, { opacity: 0, y: 40, clearProps: "transform" });
-    else cards.forEach((c) => { c.style.opacity = "0"; });
+
+  // SPACE di dalam ronde. Return true = ditangani (tetap di ronde),
+  // false = sudah di "diskusi" → caller lanjut ke scene berikutnya.
+  function roundForward() {
+    const N = roundCards.length;
+    if (soalStep === 0) {                       // A → B: papan naik + kartu pertama besar
+      soalStep = 1;
+      setPanel(true, true);
+      setDim("soft", true);
+      showBigCard(0, true);
+      playSfx("cardShow");
+      return true;
+    }
+    if (soalStep >= 1 && soalStep <= N) {       // settle kartu kini, tampilkan berikutnya
+      const cur = soalStep - 1;
+      playSfx("cardSlot");
+      flyShowcaseToSlot(cur);
+      if (soalStep < N) {
+        soalStep += 1;
+        showBigCard(soalStep - 1, true);
+        playSfx("cardShow");
+      } else {
+        soalStep = N + 1;                       // kartu terakhir menetap → diskusi
+        setDim("none", true);
+      }
+      return true;
+    }
+    return false;                               // soalStep === N+1 → advance scene
+  }
+
+  // ← di dalam ronde: snap mundur satu langkah (tanpa animasi).
+  function rebuildSoalState(s) {
+    const N = roundCards.length;
+    stageEl.querySelectorAll(".soal-flyer").forEach((f) => f.remove());
+    soalShowcaseEl.innerHTML = "";
+    buildBandSkeleton();
+    if (s <= 0) {
+      setPanel(false, false);
+      setDim("full", false);
+    } else if (s <= N) {
+      setPanel(true, false);
+      setDim("soft", false);
+      for (let i = 0; i < s - 1; i++) settleBandSlot(i);
+      showBigCard(s - 1, false);
+    } else {
+      setPanel(true, false);
+      setDim("none", false);
+      for (let i = 0; i < N; i++) settleBandSlot(i);
+    }
   }
 
   // ---------- a) Scaling safe-area ----------
@@ -1173,17 +1274,17 @@
       exitOpening(advanceScene);
       return;
     }
-    // Fase 5 (v10) — ronde: STATE A → STATE B → scene berikutnya.
+    // Fase 5b (v10) — ronde: STATE A → showcase kartu satu-per-satu → diskusi → scene.
     if (roundActive) {
-      if (soalStep === 0) { applySoalState(1, true); playSfx("cardShow"); return; }
-      advanceScene();
+      if (roundForward()) return;     // masih di dalam alur ronde
+      advanceScene();                 // sudah "diskusi" → scene berikutnya
       return;
     }
     advanceScene();
   }
-  // ← : ronde STATE B→A · lainnya → scene sebelumnya.
+  // ← : ronde mundur satu sub-langkah · di STATE A → scene sebelumnya.
   function prev() {
-    if (roundActive && soalStep === 1) { applySoalState(0, true); return; }
+    if (roundActive && soalStep > 0) { soalStep -= 1; rebuildSoalState(soalStep); return; }
     if (currentIndex > 0) showScene(currentIndex - 1);
   }
   function reset() { showScene(0); }

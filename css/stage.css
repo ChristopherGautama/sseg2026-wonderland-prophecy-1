@@ -838,17 +838,22 @@ html, body {
           drop-shadow(0 18px 50px rgba(0, 0, 0, 0.6));
 }
 
-/* Band kartu pilihan (STATE B). Opacity & posisi diatur GSAP/JS. */
+/* Band kartu pilihan (STATE B). Slot ter-reserve → terisi kiri→kanan. */
 .soal-cards {
-  position: absolute; left: 50%; bottom: 44px;
+  position: absolute; left: 50%; bottom: 40px;
   transform: translateX(-50%);
   display: flex; gap: 26px;
   align-items: flex-end; justify-content: center;
   max-width: 1760px;
   z-index: 3; pointer-events: none;
-  opacity: 0;
 }
-.soal-card-wrap { position: relative; opacity: 0; }
+/* Slot reserve ruang (invisible) → layout band stabil & terpusat. */
+.soal-slot { position: relative; visibility: hidden; }
+.soal-slot.settled { visibility: visible; animation: soalSettle 0.4s ease both; }
+@keyframes soalSettle {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 .soal-card {
   height: 300px; width: auto; display: block;
   border-radius: 12px;
@@ -859,7 +864,7 @@ html, body {
 .soal-cards[data-count="5"] .soal-card { height: 290px; }
 .soal-cards[data-count="6"] .soal-card { height: 268px; }
 
-/* Badge huruf A/B/C… (emas, senada sistem lama) */
+/* Badge huruf A/B/C… di band (emas, senada sistem lama) */
 .soal-badge {
   position: absolute; top: -18px; left: 50%;
   transform: translateX(-50%);
@@ -871,4 +876,50 @@ html, body {
   border-radius: 50%;
   border: 2px solid rgba(244, 232, 200, 0.85);
   box-shadow: 0 0 16px rgba(212, 175, 55, 0.65);
+}
+
+/* ---------- Fase 5b — Showcase kartu BESAR di tengah (dibacakan MC) ---------- */
+.soal-showcase {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 4; pointer-events: none;
+}
+/* Spotlight glow halus di belakang kartu besar */
+.soal-spot {
+  position: absolute; left: 50%; top: 50%;
+  width: 1100px; max-width: 80%; height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0; z-index: 1; pointer-events: none;
+  mix-blend-mode: screen;
+}
+/* Inner = kartu + badge (di-scale GSAP; tanpa transform centering) */
+.soal-showcase-inner {
+  position: relative; z-index: 2;
+  transform-origin: 50% 50%; opacity: 0;
+}
+.soal-showcase-card {
+  height: 670px; width: auto; display: block;     /* ~62% tinggi layar */
+  border-radius: 16px;
+  border: 1px solid rgba(201, 169, 97, 0.6);
+  box-shadow: 0 0 70px rgba(212, 175, 55, 0.5), 0 20px 60px rgba(0, 0, 0, 0.65);
+}
+.soal-showcase-badge {
+  position: absolute; top: -30px; left: 50%;
+  transform: translateX(-50%);
+  width: 82px; height: 82px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 40px;
+  color: #0B1838;
+  background: radial-gradient(circle at 35% 30%, #F4E8C8, #C9A961 58%, #9c8244 100%);
+  border-radius: 50%;
+  border: 3px solid rgba(244, 232, 200, 0.9);
+  box-shadow: 0 0 24px rgba(212, 175, 55, 0.75);
+}
+
+/* Kartu yang "terbang" dari showcase ke slot band (FLIP, koord stage) */
+.soal-flyer {
+  position: absolute; z-index: 5;
+  border-radius: 12px; object-fit: contain;
+  box-shadow: 0 0 44px rgba(201, 169, 97, 0.55), 0 12px 34px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
 }
