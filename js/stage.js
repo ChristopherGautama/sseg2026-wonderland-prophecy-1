@@ -268,38 +268,23 @@
     opTitle.classList.remove("shown");
   }
 
-  // Deteksi title-lockup.png via Image onload/onerror (tanpa crash kalau 404).
+  // V12 — judul Opening SELALU teks CSS (Cinzel); title-lockup.png tidak dipakai lagi.
   function buildOpeningTitle() {
+    if (!openingActive) return;         // sudah pindah scene sebelum dibangun
     opTitle.innerHTML = "";
-    const probe = new Image();
-    probe.onload = () => fillOpeningTitle(true);
-    probe.onerror = () => fillOpeningTitle(false);
-    probe.src = OPENING_ASSETS.emblem;
-  }
-
-  function fillOpeningTitle(hasEmblem) {
-    if (!openingActive) return;         // sudah pindah scene sebelum probe selesai
-    opTitle.innerHTML = "";
-    if (hasEmblem) {
-      const img = document.createElement("img");
-      img.className = "op-emblem"; img.alt = "";
-      img.src = OPENING_ASSETS.emblem;
-      opTitle.appendChild(img);
-    } else {
-      const sub = document.createElement("div");
-      sub.className = "op-sub";
-      sub.textContent = "The Trials of the Oracle";
-      const h = document.createElement("div");
-      h.className = "op-maintitle";
-      h.textContent = "WONDERLAND PROPHECY";
-      const div = document.createElement("img");
-      div.className = "op-divider"; div.alt = "";
-      div.src = OPENING_ASSETS.divider;
-      div.onerror = () => div.remove();
-      opTitle.appendChild(sub);
-      opTitle.appendChild(h);
-      opTitle.appendChild(div);
-    }
+    const sub = document.createElement("div");
+    sub.className = "op-sub";
+    sub.textContent = "The Trials of the Oracle";
+    const h = document.createElement("div");
+    h.className = "op-maintitle";
+    h.textContent = "WONDERLAND PROPHECY";
+    const div = document.createElement("img");
+    div.className = "op-divider"; div.alt = "";
+    div.src = OPENING_ASSETS.divider;
+    div.onerror = () => div.remove();
+    opTitle.appendChild(sub);
+    opTitle.appendChild(h);
+    opTitle.appendChild(div);
     playOpeningIntro();
   }
 
