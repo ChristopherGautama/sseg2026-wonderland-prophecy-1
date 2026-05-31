@@ -707,6 +707,44 @@
     }
   }
 
+  // V11 Fase 7 — kilatan singkat aksen reveal Bonus (putih-kebiruan; TANPA crimson-crisis penuh).
+  function bonusLightningFlash() {
+    const flash = document.createElement("div");
+    flash.className = "crisis-lightning";   // reuse style flash putih-biru (mix-blend screen)
+    flash.style.zIndex = "7";               // di atas kartu band/showcase
+    boardEl.appendChild(flash);
+    if (window.gsap) {
+      gsap.fromTo(flash, { opacity: 0 },
+        { opacity: 0.8, duration: 0.07, ease: "power1.out",
+          onComplete() {
+            gsap.to(flash, { opacity: 0, duration: 0.16, ease: "power1.in",
+              onComplete() { flash.remove(); } });
+          } });
+    } else {
+      setTimeout(() => flash.remove(), 300);
+    }
+  }
+
+  // V11 Fase 7 — opsi terakhir Bonus = kartu SKIP (badge "SKIP", bukan huruf).
+  function isBonusSkip(i) { return currentKey === "bonus" && i === roundCards.length - 1; }
+  function soalBadgeLabel(i) {
+    if (isBonusSkip(i)) return "SKIP";
+    return (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
+  }
+  // Fallback CSS bila gambar kartu SKIP (skip-card.png) 404 — tema gembok/emas, tanpa crash.
+  function attachSkipFallback(imgEl, big) {
+    imgEl.onerror = () => {
+      if (!imgEl.parentNode) return;
+      imgEl.style.display = "none";
+      const fb = document.createElement("div");
+      fb.className = "skip-card-fallback" + (big ? " skip-card-fallback--big" : "");
+      fb.innerHTML = '<div class="sk-title">SKIP</div>' +
+                     '<div class="sk-sub">POSITION LOCKED</div>' +
+                     '<div class="sk-sub2">NO WAGER</div>';
+      imgEl.parentNode.appendChild(fb);
+    };
+  }
+
   // Skeleton band: N slot ter-reserve (visibility hidden) → layout stabil & terpusat.
   function buildBandSkeleton() {
     soalCardsEl.innerHTML = "";
@@ -717,10 +755,11 @@
       const img = document.createElement("img");
       img.className = "soal-card";
       img.src = path;
-      img.onerror = () => console.warn("Kartu gagal dimuat:", path);
+      if (isBonusSkip(i)) attachSkipFallback(img, false);
+      else img.onerror = () => console.warn("Kartu gagal dimuat:", path);
       const badge = document.createElement("div");
-      badge.className = "soal-badge";
-      badge.textContent = (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
+      badge.className = "soal-badge" + (isBonusSkip(i) ? " is-skip" : "");
+      badge.textContent = soalBadgeLabel(i);
       slot.appendChild(img);
       slot.appendChild(badge);
       soalCardsEl.appendChild(slot);
@@ -788,10 +827,11 @@
     const img = document.createElement("img");
     img.className = "soal-showcase-card"; img.alt = "";
     img.src = roundCards[i];
-    img.onerror = () => console.warn("Kartu gagal dimuat:", roundCards[i]);
+    if (isBonusSkip(i)) attachSkipFallback(img, true);
+    else img.onerror = () => console.warn("Kartu gagal dimuat:", roundCards[i]);
     const badge = document.createElement("div");
-    badge.className = "soal-showcase-badge";
-    badge.textContent = (typeof CARD_BADGES !== "undefined" && CARD_BADGES[i]) || (i + 1);
+    badge.className = "soal-showcase-badge" + (isBonusSkip(i) ? " is-skip" : "");
+    badge.textContent = soalBadgeLabel(i);
     inner.appendChild(img);
     inner.appendChild(badge);
     soalShowcaseEl.appendChild(inner);
@@ -1059,6 +1099,10 @@
         addRoundOverlays(key);
         playOneShot(REVEAL_SFX, SFX_VOL);   // V11 — HANYA sfx-05 (pendek); sting panjang dihentikan
         if (key === "r5") playOneShot(CRISIS_LIGHTNING_SFX, 0.7);   // V11 Fase 4 — aksen petir sekali (R5)
+        else if (key === "bonus") {                                // V11 Fase 7 — aksen reversal (bukan crisis penuh)
+          playOneShot(CRISIS_LIGHTNING_SFX, 0.6);
+          bonusLightningFlash();
+        }
         applyAnswerReveal(ans, key, true);
         if (ans.type !== "alloc") showCelebrateWizco();   // maskot utk non-alokasi
       }, 80);
@@ -1072,8 +1116,36 @@
   // Router visual jawaban per tipe (config-driven; tak ada hardcode jawaban).
   function applyAnswerReveal(ans, key, animate) {
     if (ans.type === "alloc") revealAllocDelta(ans, animate);
-    else if (ans.type === "multi" && key !== "bonus") revealMultiPick(ans, key, animate);
-    else applyAnswerStamp(animate);          // single (r2/r3) + bonus (2 benar)
+    else if (key === "bonus") revealBonus(ans, animate);          // V11 Fase 7 — A&B benar, SKIP netral
+    else if (ans.type === "multi") revealMultiPick(ans, key, animate);
+    else applyAnswerStamp(animate);          // single (r2/r3)
+  }
+
+  // V11 Fase 7 — REVEAL BONUS: A(QULL)&B(NOCT) dua-duanya benar (stamp-confirmed),
+  // C(SPYR)&D(Property) redup + red-flag, SKIP = netral "POSITION LOCKED" (bukan salah).
+  function revealBonus(ans, animate) {
+    const correct = ans.correct || [];        // [0,1]
+    const trap = ans.trap || [];              // [2,3]
+    const skipIdx = roundCards.length - 1;    // 4 = SKIP
+    correct.forEach((idx, n) => addStampToSlot(idx, STAMP.ok, "rv-correct", n * 0.18, animate));
+    const base = correct.length * 0.18;
+    trap.forEach((idx, n) => addStampToSlot(idx, STAMP.bad, "rv-trap", base + n * 0.18, animate));
+    addLockedTag(skipIdx, base + trap.length * 0.18, animate);
+  }
+
+  // Badge NETRAL emas tenang utk kartu SKIP — tanpa benar/salah, tanpa dim.
+  function addLockedTag(idx, delay, animate) {
+    const slot = soalCardsEl.children[idx];
+    if (!slot) return;
+    slot.classList.add("rv-locked");
+    const tag = document.createElement("div");
+    tag.className = "soal-locked-tag";
+    tag.textContent = "POSITION LOCKED";
+    slot.appendChild(tag);
+    if (window.gsap && animate) {
+      gsap.fromTo(tag, { opacity: 0, y: 12, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)", delay: delay || 0 });
+    }
   }
 
   // Tempel stamp ke kartu + animasi pop (stagger via delay). cls = rv-correct/rv-trap.
@@ -1190,7 +1262,7 @@
     if (revealParticleTimer) { clearTimeout(revealParticleTimer); revealParticleTimer = null; }
     if (revealStampTimer) { clearTimeout(revealStampTimer); revealStampTimer = null; }
     if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
-    boardEl.querySelectorAll(".soal-reveal-flash, .soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay")
+    boardEl.querySelectorAll(".soal-reveal-flash, .soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay, .crisis-lightning")
       .forEach((e) => e.remove());
     if (window.gsap) {
       gsap.killTweensOf(boardPanel);
@@ -1203,8 +1275,8 @@
       boardPanel.src = PANELS[currentKey].soal;
     }
     soalCardsEl.querySelectorAll(".soal-slot").forEach((slot) => {
-      slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down");
-      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta").forEach((s) => s.remove());
+      slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down", "rv-locked");
+      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta, .soal-locked-tag").forEach((s) => s.remove());
     });
   }
 

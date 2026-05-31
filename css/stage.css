@@ -1092,6 +1092,55 @@ html, body {
 .soal-delta-up   { background: #2E7D5B; }
 .soal-delta-down { background: #C0392B; }
 
+/* ============================================================
+   V11 Fase 7 — BONUS (The Reversals): badge SKIP (pill), kartu SKIP netral,
+   tag "POSITION LOCKED", + fallback kartu SKIP bila gambar 404.
+   ============================================================ */
+/* Badge SKIP = pill (lebih lebar dari lingkaran A/B/C/D) */
+.soal-badge.is-skip {
+  width: auto; min-width: 50px; height: 36px; padding: 0 14px;
+  border-radius: 18px; font-size: 18px; letter-spacing: 1px;
+}
+.soal-showcase-badge.is-skip {
+  width: auto; min-width: 82px; height: 58px; padding: 0 22px;
+  border-radius: 29px; font-size: 30px; letter-spacing: 1px;
+}
+/* Kartu SKIP saat reveal: tenang, border emas (BUKAN benar/salah, tanpa dim) */
+.soal-slot.rv-locked .soal-card {
+  border-color: rgba(201, 169, 97, 0.95);
+  box-shadow: 0 0 28px rgba(201, 169, 97, 0.55);
+}
+/* Tag netral "POSITION LOCKED" (emas tenang) */
+.soal-locked-tag {
+  position: absolute; left: 50%; bottom: 12px;
+  transform: translateX(-50%);
+  padding: 6px 16px; border-radius: 16px; white-space: nowrap;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 16px; letter-spacing: 1px; color: #0B1838;
+  background: linear-gradient(180deg, #F4E8C8, #C9A961 60%, #9c8244 100%);
+  border: 1px solid rgba(244, 232, 200, 0.9);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.6);
+  z-index: 5; pointer-events: none;
+}
+/* Fallback CSS kartu SKIP (kalau skip-card.png 404) — tema gembok/emas */
+.skip-card-fallback {
+  height: 290px; width: 193px; box-sizing: border-box;
+  border-radius: 12px; border: 2px solid #C9A961;
+  background: linear-gradient(160deg, rgba(20, 34, 68, 0.96), rgba(11, 24, 56, 0.96));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; box-shadow: 0 0 26px rgba(201, 169, 97, 0.45);
+}
+.skip-card-fallback .sk-title {
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  color: #F4D77A; font-size: 30px; letter-spacing: 3px;
+}
+.skip-card-fallback .sk-sub  { font-family: Georgia, serif; color: #F4E8C8; font-size: 14px; letter-spacing: 1px; }
+.skip-card-fallback .sk-sub2 { font-family: Georgia, serif; color: rgba(244,232,200,0.65); font-size: 12px; letter-spacing: 1px; }
+.skip-card-fallback--big { height: 670px; width: 446px; gap: 18px; }
+.skip-card-fallback--big .sk-title { font-size: 62px; }
+.skip-card-fallback--big .sk-sub  { font-size: 28px; }
+.skip-card-fallback--big .sk-sub2 { font-size: 22px; }
+
 /* Overlay dekoratif tematik (di sekitar/belakang panel; tak nutupi kartu) */
 .soal-reveal-overlay {
   position: absolute; left: 50%; top: 0;
