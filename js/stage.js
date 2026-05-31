@@ -1259,8 +1259,13 @@
     if (i > SCENES.length - 1) i = SCENES.length - 1;
     currentIndex = i;
 
+    if (wdActive) wdTeardownNow();   // V11 — buang overlay dialog Wizco lama saat pindah scene
+
     const item = SCENES[i];
-    const path = ASSETS[item.type][item.key];
+    // Scene wizco (briefing/explainer) pakai bg-<key>; lainnya ASSETS[type][key].
+    const path = (item.type === "briefing" || item.type === "explainer")
+      ? (ASSETS.bg && ASSETS.bg[item.key] ? ASSETS.bg[item.key] : null)
+      : (ASSETS[item.type] ? ASSETS[item.type][item.key] : null);
 
     const nextSlot = activeSlot === 0 ? 1 : 0;
     slots[nextSlot].style.backgroundImage = path ? 'url("' + path + '")' : "none";
@@ -1449,6 +1454,16 @@
     applyDiscussMode(false);
 
     const key = item.key;
+
+    // V11 — scene dialog Wizco: tampilkan overlay mesin (briefing/explainer).
+    if (item.type === "briefing" || item.type === "explainer") {
+      teardownRoundSoal();
+      roundCards = [];
+      currentKey = null;
+      launchWizcoScene(item);
+      return;
+    }
+
     const isRound = item.type === "bg" && key !== "opening" && key !== "closing"
       && typeof PANELS !== "undefined" && !!PANELS[key];
     if (isRound) {
@@ -1458,6 +1473,23 @@
       roundCards = [];
       currentKey = null;
     }
+  }
+
+  // V11 — luncurkan dialog Wizco utk scene briefing/explainer, lalu sambung ke scene berikut.
+  function launchWizcoScene(item) {
+    const data = (item.type === "briefing")
+      ? (typeof WIZCO_BRIEFING !== "undefined" ? WIZCO_BRIEFING[item.key] : null)
+      : (typeof WIZCO_EXPLAINER !== "undefined" ? WIZCO_EXPLAINER[item.key] : null);
+    if (!data || !Array.isArray(data.lines) || !data.lines.length) {
+      console.warn("[Wizco] data dialog tak ada:", item.type, item.key, "— scene dilewati via SPACE.");
+      return;   // tanpa overlay → SPACE biasa lanjut scene (tidak rekursif)
+    }
+    // bgKey = key scene (opening/r{n}/bonus). onComplete → pindah scene lewat nav yg ada.
+    playWizcoDialogue({ data: data, bgKey: item.key, onComplete: wizcoSceneComplete });
+  }
+
+  function wizcoSceneComplete() {
+    advanceScene();   // pindah ke scene berikutnya (sistem navigasi yang sudah ada)
   }
 
   // Skeleton: semua slot dibuat duluan (hidden) supaya posisi tak bergeser.
@@ -1822,14 +1854,7 @@
   // Aman jika aset/SFX hilang (fallback pose explain + bubble panel; tidak crash).
   // ============================================================
   const WD_TYPE_MS  = 28;                                    // ms per karakter (typewriter)
-  // REVISI 6A — SFX ketik halus: telegram, fallback sparkle bila 404. Probe sekali.
-  let   wdTypeSfx   = "assets/audio/sfx/sfx-11-telegram.mp3";
-  const WD_TYPE_SFX_FALLBACK = "assets/audio/sfx/sfx-17-sparkle.mp3";
-  (function () {
-    const probe = new Audio();
-    probe.addEventListener("error", () => { wdTypeSfx = WD_TYPE_SFX_FALLBACK; });
-    probe.src = wdTypeSfx;
-  })();
+  // REVISI FINAL — SFX ketik dihapus total (typewriter visual saja, tanpa suara).
   const WD_FALLBACK_POSE = "assets/img/wizco/wizco-explain.png";
 
   let wdActive = false;
@@ -1975,9 +2000,7 @@
     wdTypeInterval = setInterval(() => {
       wdCharPos++;
       if (wdTextEl) wdTextEl.textContent = wdFullText.slice(0, wdCharPos);
-      // REVISI 6A — bunyi ketik HALUS: telegram, tiap 5 char, pelan, lewati spasi.
-      const ch = wdFullText.charAt(wdCharPos - 1);
-      if (wdCharPos % 5 === 0 && ch.trim() !== "") playOneShot(wdTypeSfx, 0.15);
+      // REVISI FINAL — SFX ketik DIMATIKAN total (typewriter tetap jalan, tanpa suara).
       if (wdCharPos >= wdFullText.length) {
         clearInterval(wdTypeInterval); wdTypeInterval = null;
         wdTyping = false;
@@ -2014,11 +2037,12 @@
     if (wdCountingDown) return;
     wdCountingDown = true;
     wdSetPose("cheer");
+    // REVISI 2 — jeda PER ANGKA 1 detik penuh (3→2→1), GO ~0.8s, lalu onComplete.
     const seq = [
-      { label: "3",   sfx: TICK_SFX, vol: 0.45 },
-      { label: "2",   sfx: TICK_SFX, vol: 0.45 },
-      { label: "1",   sfx: BELL_SFX, vol: 0.5 },
-      { label: "GO!", sfx: BELL_SFX, vol: 0.6 }
+      { label: "3",   sfx: TICK_SFX, vol: 0.45, hold: 1000 },
+      { label: "2",   sfx: TICK_SFX, vol: 0.45, hold: 1000 },
+      { label: "1",   sfx: BELL_SFX, vol: 0.5,  hold: 1000 },
+      { label: "GO!", sfx: BELL_SFX, vol: 0.6,  hold: 800 }
     ];
     let n = 0;
     function stepCount() {
@@ -2027,7 +2051,7 @@
       const it = seq[n++];
       wdShowCountNumber(it.label);
       playOneShot(it.sfx, it.vol);
-      wdTimers.push(setTimeout(stepCount, 700));
+      wdTimers.push(setTimeout(stepCount, it.hold));
     }
     stepCount();
   }
@@ -2035,12 +2059,11 @@
   function wdShowCountNumber(label) {
     if (!wdCountEl) return;
     wdCountEl.textContent = label;
+    // REVISI 2 — pop cepat lalu DITAHAN (tidak auto-fade); angka berikut menggantikan.
     if (window.gsap) {
       gsap.killTweensOf(wdCountEl);
-      gsap.set(wdCountEl, { opacity: 0, scale: 0.6 });
-      gsap.timeline()
-        .to(wdCountEl, { opacity: 1, scale: 1, duration: 0.34, ease: "back.out(2)" })
-        .to(wdCountEl, { opacity: 0, scale: 1.12, duration: 0.24, ease: "power1.in" }, 0.5);
+      gsap.fromTo(wdCountEl, { opacity: 0, scale: 0.6 },
+        { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" });
     } else {
       wdCountEl.style.opacity = "1";
     }
@@ -2077,29 +2100,17 @@
     wdRemoveOverlay();
   }
 
-  // TEMP (V11 Fase 6A) — buka preview; onComplete cukup tutup overlay. Hapus saat 6B/6C.
-  function wdPreview(data, bgKey) {
-    if (!data) {
-      console.warn("[Wizco 6A] WIZCO_BRIEFING/WIZCO_EXPLAINER belum ada di config.js — tak bisa preview.");
-      return;
-    }
-    playWizcoDialogue({ data: data, bgKey: bgKey, onComplete: closeWizcoDialogue });
-  }
-
   function onKeydown(e) {
     unlockAudio();   // Fase C3 — interaksi pertama membuka audio
 
-    // TEMP (V11 Fase 6A) — preview mesin dialog Wizco sebagai overlay. Hapus saat 6B/6C.
+    // V11 — dialog Wizco aktif: SPACE/→ menguasai advance baris; ← mundur scene. F/M tetap.
     if (wdActive) {
-      if (e.key === "Escape") { e.preventDefault(); closeWizcoDialogue(); return; }
       if (e.key === " " || e.key === "ArrowRight") { e.preventDefault(); wdAdvance(); return; }
-      return;   // overlay preview aktif → kunci navigasi scene utama
+      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); return; }
+      if (e.key === "f" || e.key === "F") { toggleFullscreen(); return; }
+      if (e.key === "m" || e.key === "M") { toggleMute(); return; }
+      return;   // kunci tombol lain selama dialog berjalan
     }
-    if (e.key === "9") { e.preventDefault();
-      wdPreview(typeof WIZCO_BRIEFING !== "undefined" ? WIZCO_BRIEFING.r1 : null, "r1"); return; }
-    if (e.key === "0") { e.preventDefault();
-      wdPreview(typeof WIZCO_EXPLAINER !== "undefined" ? WIZCO_EXPLAINER.r1 : null, "r1"); return; }
-    // END TEMP
 
     switch (e.key) {
       case " ":

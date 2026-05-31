@@ -60,18 +60,22 @@ const PANELS = {
   bonus: { soal: "assets/img/panels/panel-bonus.png",  reveal: null }
 };
 
+// V11 Fase 6A (sambung alur) — sisipkan scene BRIEFING (sebelum panel) & EXPLAINER (sesudah reveal).
+// Pola per ronde: Transition → Briefing → Panel(bg) → Explainer → (Transition berikut).
+// type "briefing"/"explainer" dirender oleh mesin playWizcoDialogue (overlay), bukan bg/panel biasa.
 const SCENES = [
   { name: "Opening", type: "bg", key: "opening" },
-  { name: "Transition I", type: "transition", key: "r1" }, { name: "Round 1", type: "bg", key: "r1" },
-  { name: "Transition II", type: "transition", key: "r2" }, { name: "Round 2", type: "bg", key: "r2" },
-  { name: "Transition III", type: "transition", key: "r3" }, { name: "Round 3", type: "bg", key: "r3" },
-  { name: "Transition IV", type: "transition", key: "r4" }, { name: "Round 4", type: "bg", key: "r4" },
-  { name: "Transition V", type: "transition", key: "r5" }, { name: "Round 5", type: "bg", key: "r5" },
-  { name: "Transition VI", type: "transition", key: "r6" }, { name: "Round 6", type: "bg", key: "r6" },
-  { name: "Transition VII", type: "transition", key: "r7" }, { name: "Round 7", type: "bg", key: "r7" },
-  { name: "Transition VIII", type: "transition", key: "r8" }, { name: "Round 8", type: "bg", key: "r8" },
-  { name: "Transition IX", type: "transition", key: "r9" }, { name: "Round 9", type: "bg", key: "r9" },
-  { name: "Transition Bonus", type: "transition", key: "bonus" }, { name: "Bonus", type: "bg", key: "bonus" },
+  { name: "Briefing Opening", type: "briefing", key: "opening" },
+  { name: "Transition I", type: "transition", key: "r1" }, { name: "Briefing R1", type: "briefing", key: "r1" }, { name: "Round 1", type: "bg", key: "r1" }, { name: "Explainer R1", type: "explainer", key: "r1" },
+  { name: "Transition II", type: "transition", key: "r2" }, { name: "Briefing R2", type: "briefing", key: "r2" }, { name: "Round 2", type: "bg", key: "r2" }, { name: "Explainer R2", type: "explainer", key: "r2" },
+  { name: "Transition III", type: "transition", key: "r3" }, { name: "Briefing R3", type: "briefing", key: "r3" }, { name: "Round 3", type: "bg", key: "r3" }, { name: "Explainer R3", type: "explainer", key: "r3" },
+  { name: "Transition IV", type: "transition", key: "r4" }, { name: "Briefing R4", type: "briefing", key: "r4" }, { name: "Round 4", type: "bg", key: "r4" }, { name: "Explainer R4", type: "explainer", key: "r4" },
+  { name: "Transition V", type: "transition", key: "r5" }, { name: "Briefing R5", type: "briefing", key: "r5" }, { name: "Round 5", type: "bg", key: "r5" }, { name: "Explainer R5", type: "explainer", key: "r5" },
+  { name: "Transition VI", type: "transition", key: "r6" }, { name: "Briefing R6", type: "briefing", key: "r6" }, { name: "Round 6", type: "bg", key: "r6" }, { name: "Explainer R6", type: "explainer", key: "r6" },
+  { name: "Transition VII", type: "transition", key: "r7" }, { name: "Briefing R7", type: "briefing", key: "r7" }, { name: "Round 7", type: "bg", key: "r7" }, { name: "Explainer R7", type: "explainer", key: "r7" },
+  { name: "Transition VIII", type: "transition", key: "r8" }, { name: "Briefing R8", type: "briefing", key: "r8" }, { name: "Round 8", type: "bg", key: "r8" }, { name: "Explainer R8", type: "explainer", key: "r8" },
+  { name: "Transition IX", type: "transition", key: "r9" }, { name: "Briefing R9", type: "briefing", key: "r9" }, { name: "Round 9", type: "bg", key: "r9" }, { name: "Explainer R9", type: "explainer", key: "r9" },
+  { name: "Transition Bonus", type: "transition", key: "bonus" }, { name: "Briefing Bonus", type: "briefing", key: "bonus" }, { name: "Bonus", type: "bg", key: "bonus" }, { name: "Explainer Bonus", type: "explainer", key: "bonus" },
   { name: "Closing", type: "bg", key: "closing" }
 ];
 
