@@ -1822,12 +1822,19 @@
   // Aman jika aset/SFX hilang (fallback pose explain + bubble panel; tidak crash).
   // ============================================================
   const WD_TYPE_MS  = 28;                                    // ms per karakter (typewriter)
-  const WD_TYPE_SFX = "assets/audio/sfx/sfx-01-click.mp3";   // bunyi ketik halus (volume rendah)
+  // REVISI 6A — SFX ketik halus: telegram, fallback sparkle bila 404. Probe sekali.
+  let   wdTypeSfx   = "assets/audio/sfx/sfx-11-telegram.mp3";
+  const WD_TYPE_SFX_FALLBACK = "assets/audio/sfx/sfx-17-sparkle.mp3";
+  (function () {
+    const probe = new Audio();
+    probe.addEventListener("error", () => { wdTypeSfx = WD_TYPE_SFX_FALLBACK; });
+    probe.src = wdTypeSfx;
+  })();
   const WD_FALLBACK_POSE = "assets/img/wizco/wizco-explain.png";
 
   let wdActive = false;
   let wdRoot = null, wdBgEl = null, wdWizcoWrap = null, wdWizcoImg = null,
-      wdTextEl = null, wdCountEl = null;
+      wdBubbleEl = null, wdBubbleGlow = null, wdTextEl = null, wdCountEl = null;
   let wdData = null, wdOnComplete = null;
   let wdLineIndex = 0;
   let wdTyping = false, wdFullText = "", wdCharPos = 0;
@@ -1860,14 +1867,16 @@
     wiz.className = "wd-wizco-img"; wiz.alt = "";
     wrap.appendChild(wiz);
 
+    // REVISI 6A — glow emas KECIL & TIPIS di belakang bubble (opsional; 404 → skip).
+    const glow = document.createElement("img");
+    glow.className = "wd-bubble-glow"; glow.alt = "";
+    glow.src = (typeof ASSETS !== "undefined" && ASSETS.shared && ASSETS.shared.glowGold)
+      ? ASSETS.shared.glowGold : "assets/img/shared/glow-gold.png";
+    glow.onerror = () => glow.remove();
+
+    // REVISI 6A — bubble = panel CSS murni (parchment + border emas), TANPA gambar.
     const bubble = document.createElement("div");
     bubble.className = "wd-bubble";
-    const bubbleSrc = (typeof ASSETS !== "undefined" && ASSETS.ui && ASSETS.ui.speechBubble)
-      ? ASSETS.ui.speechBubble : "assets/img/ui/speech-bubble.png";
-    bubble.style.backgroundImage = 'url("' + bubbleSrc + '")';
-    const probe = new Image();                          // 404 → pakai panel fallback
-    probe.onerror = () => bubble.classList.add("wd-bubble--fallback");
-    probe.src = bubbleSrc;
     const txt = document.createElement("div");
     txt.className = "wd-text";
     bubble.appendChild(txt);
@@ -1880,12 +1889,13 @@
     hint.textContent = "SPACE ▶ lanjut · Esc ✕ tutup";
 
     root.appendChild(bg); root.appendChild(dim);
-    root.appendChild(wrap); root.appendChild(bubble);
+    root.appendChild(wrap);
+    root.appendChild(glow); root.appendChild(bubble);   // glow di belakang bubble
     root.appendChild(count); root.appendChild(hint);
     document.body.appendChild(root);
 
     wdRoot = root; wdBgEl = bg; wdWizcoWrap = wrap; wdWizcoImg = wiz;
-    wdTextEl = txt; wdCountEl = count;
+    wdBubbleEl = bubble; wdBubbleGlow = glow; wdTextEl = txt; wdCountEl = count;
   }
 
   function wdSetPose(pose) {
@@ -1925,6 +1935,16 @@
         { xPercent: 0, opacity: 1, duration: 0.8, ease: "power3.out", onComplete: wdStartIdleFloat });
       gsap.fromTo(wdBgEl, { scale: 1.0 },
         { scale: 1.08, duration: 16, ease: "sine.inOut", yoyo: true, repeat: -1, transformOrigin: "50% 50%" });
+      // REVISI 6A — bubble masuk scale 0.94→1 + fade; glow emas berdenyut sangat pelan.
+      gsap.fromTo(wdBubbleEl, { scale: 0.94, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.4, ease: "power3.out", transformOrigin: "50% 50%" });
+      if (wdBubbleGlow) {
+        gsap.fromTo(wdBubbleGlow, { opacity: 0 },
+          { opacity: 0.22, duration: 1.0, ease: "sine.inOut",
+            onComplete() {
+              gsap.to(wdBubbleGlow, { opacity: 0.1, duration: 2.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
+            } });
+      }
     } else {
       wdRoot.style.opacity = "1"; wdWizcoWrap.style.opacity = "1";
     }
@@ -1955,7 +1975,9 @@
     wdTypeInterval = setInterval(() => {
       wdCharPos++;
       if (wdTextEl) wdTextEl.textContent = wdFullText.slice(0, wdCharPos);
-      if (wdCharPos % 3 === 0) playOneShot(WD_TYPE_SFX, 0.22);   // ketik tiap 3 char (tak berisik)
+      // REVISI 6A — bunyi ketik HALUS: telegram, tiap 5 char, pelan, lewati spasi.
+      const ch = wdFullText.charAt(wdCharPos - 1);
+      if (wdCharPos % 5 === 0 && ch.trim() !== "") playOneShot(wdTypeSfx, 0.15);
       if (wdCharPos >= wdFullText.length) {
         clearInterval(wdTypeInterval); wdTypeInterval = null;
         wdTyping = false;
@@ -2035,7 +2057,7 @@
     wdActive = false; wdCountingDown = false;
     wdClearTimers();
     if (window.gsap && wdRoot) {
-      gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdCountEl]);
+      gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdBubbleEl, wdBubbleGlow, wdCountEl]);
       gsap.to(wdRoot, { opacity: 0, duration: 0.3, ease: "power1.in", onComplete: wdRemoveOverlay });
     } else {
       wdRemoveOverlay();
@@ -2044,14 +2066,14 @@
 
   function wdRemoveOverlay() {
     if (wdRoot && wdRoot.parentNode) wdRoot.parentNode.removeChild(wdRoot);
-    wdRoot = wdBgEl = wdWizcoWrap = wdWizcoImg = wdTextEl = wdCountEl = null;
+    wdRoot = wdBgEl = wdWizcoWrap = wdWizcoImg = wdBubbleEl = wdBubbleGlow = wdTextEl = wdCountEl = null;
   }
 
   // Teardown INSTAN (tanpa fade) — dipakai saat membuka ulang overlay.
   function wdTeardownNow() {
     wdActive = false; wdCountingDown = false;
     wdClearTimers();
-    if (window.gsap && wdRoot) gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdCountEl]);
+    if (window.gsap && wdRoot) gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdBubbleEl, wdBubbleGlow, wdCountEl]);
     wdRemoveOverlay();
   }
 

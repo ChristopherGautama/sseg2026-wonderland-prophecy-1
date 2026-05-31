@@ -165,3 +165,162 @@ const AUDIO = {
     win:           "assets/audio/sfx/sfx-14-fanfare.mp3"     // juara alloc
   }
 };
+const WIZCO_BRIEFING = {
+  opening: { countdown: false, lines: [
+    { pose: "bow",            text: "Selamat datang, para calon Oracle, di menara Bank of Lyndell." },
+    { pose: "explain",        text: "Malam ini kalian tak sekadar bermain — kalian akan membaca arah waktu, meramal ke mana pasar bergerak." },
+    { pose: "explain",        text: "Aturannya satu, diulang sembilan kali: baca skenario di layar, pilih jawaban di Prophecy Card, lalu pasang wager sesuai keyakinan kalian." },
+    { pose: "present",        text: "Wager adalah ukuran keyakinan. Makin yakin, makin berani. Benar — kalian dibayar; salah — wager hangus." },
+    { pose: "thinking",       text: "Tiap trial, multiplier naik, dari kali 1.0 hingga kali 2.5. Yang berani di saat tepat akan melesat; yang sembrono akan tertinggal." },
+    { pose: "explain",        text: "Tak ada yang tersingkir — Bank of Lyndell menjamin tiap Oracle tetap berdiri hingga akhir." },
+    { pose: "cheer",          text: "Crystal ball sudah bergetar... Mari kita mulai, para Oracle!" }
+  ]},
+  r1: { countdown: true, lines: [
+    { pose: "present",        text: "Trial pertama: The Veiled Chart. Di hadapan kalian, grafik SPYR — saham teknologi flagship Lyndell." },
+    { pose: "magnifier",      text: "Tiga puluh hari terakhir harganya jatuh, lalu membentuk dua titik rendah di level 380 dengan recovery di tengah. Volume mulai meningkat." },
+    { pose: "pointing-right", text: "Tiga jalur masa depan terbentang — kartu A, B, dan C. Bacalah pola candle, tebak ke mana SPYR bergerak dalam 7 hari." },
+    { pose: "explain",        text: "Pasang wager 10 sampai 50, multiplier kali 1.0. Ini pemanasan — kenali ritmenya." },
+    { pose: "thinking",       text: "Ingat petuah Oracle: pola tanpa volume hanyalah bayangan; pola dengan volume adalah ramalan." },
+    { pose: "cheer",          text: "Bacalah candle sebelum kabut kembali... Ayo, masuki Trial Pertama!" }
+  ]},
+  r2: { countdown: true, lines: [
+    { pose: "scroll",         text: "Trial kedua: The Headline Strikes. Sebuah berita mengguncang seluruh kerajaan." },
+    { pose: "present",        text: "The Lyndell Journal menulis: Bank of Lyndell menaikkan Crown Rate dari 5% ke 7% — langkah darurat melawan inflasi." },
+    { pose: "pointing-left",  text: "Empat sektor di hadapan kalian. Pertanyaannya: sektor mana yang paling DIUNTUNGKAN oleh kenaikan suku bunga ini?" },
+    { pose: "explain",        text: "Pilih satu, pasang wager 20 sampai 100, multiplier kali 1.0." },
+    { pose: "thinking",       text: "Satu berita bisa mengangkat satu sektor sekaligus menjatuhkan yang lain. Pikirkan: siapa yang tersenyum saat bunga naik?" },
+    { pose: "cheer",          text: "Tafsirkan headline-nya... Ayo, Trial Kedua dimulai!" }
+  ]},
+  r3: { countdown: true, lines: [
+    { pose: "present",        text: "Trial ketiga: Sector Race. Empat sektor berdiri di garis start." },
+    { pose: "magnifier",      text: "Kondisi makro Lyndell sedang manis — Crown Rate stabil 5%, GDP tumbuh 4.5%, inflasi terkendali 3.2%, surplus dagang pecah rekor. Inilah Goldilocks." },
+    { pose: "pointing-right", text: "Sektor mana yang menyentuh garis emas lebih dulu dalam 30 hari? Ini bukan satu berita — ini membaca seluruh kondisi pasar." },
+    { pose: "explain",        text: "Pilih satu sektor, wager 20 sampai 100, multiplier naik jadi kali 1.2." },
+    { pose: "mock",           text: "Tapi ingat, para Oracle... kondisi manis hari ini bisa berbalik 180 derajat nanti. Yang menang sekarang, belum tentu menang selamanya." },
+    { pose: "cheer",          text: "Siapa yang tercepat ke garis emas? Ayo, Trial Ketiga!" }
+  ]},
+  r4: { countdown: true, lines: [
+    { pose: "present",        text: "Trial keempat: The Oracle's Portfolio. Mulai sekarang, kalian bukan lagi peramal sektor tunggal." },
+    { pose: "explain",        text: "Kalian adalah Portfolio Manager Kerajaan. Bank of Lyndell memotong Crown Rate 75 bps ke 4.25% — ekonomi berakselerasi." },
+    { pose: "pointing-left",  text: "Tugas baru: bagi 100 ke LIMA saham. Wajib total 100, minimal 2 saham, maksimal 50 per saham." },
+    { pose: "thinking",       text: "Multiplier kali 1.5. Terlalu konservatif berarti stagnan; terlalu agresif ke saham yang salah berarti bencana. Seimbangkan keyakinan kalian." },
+    { pose: "magnifier",      text: "Setiap saham bereaksi beda terhadap rate cut. Pikirkan: siapa yang paling lega saat bunga turun?" },
+    { pose: "cheer",          text: "Bijaklah membagi dana kerajaan... Ayo, Trial Keempat!" }
+  ]},
+  r5: { countdown: true, lines: [
+    { pose: "shocked",        text: "Para Oracle... langit Lyndell menggelap. Sebuah Black Swan telah datang." },
+    { pose: "scroll",         text: "Wabah Crimson Fever menyebar. Lockdown 90 hari. Pasar crash 25% dalam tiga hari. Crown Rate dipotong darurat ke 1%, dan deflasi melanda." },
+    { pose: "explain",        text: "Trial kelima: Black Swan Survival. Enam aset defensif di hadapan kalian — pilih TIGA yang akan bertahan." },
+    { pose: "pointing-right", text: "Ini paket trio: satu wager untuk tiga pilihan. Wager 30 sampai 150, multiplier kali 1.5. Benar tiga-tiganya, hadiah penuh." },
+    { pose: "magnifier",      text: "Petunjuk dari menara: safe haven sejati harus LIKUID, COUNTER-CYCLICAL, dan BUKAN bagian dari sistem yang sedang runtuh. Yang terlihat aman belum tentu aman." },
+    { pose: "cheer",          text: "Saat kerajaan terbakar, hanya tiga perisai yang menyelamatkan... Ayo, bertahanlah, Oracle!" }
+  ]},
+  r6: { countdown: true, lines: [
+    { pose: "present",        text: "Trial keenam: The Catalyst Trial. Pandemi berlalu — Lyndell bangkit kembali." },
+    { pose: "scroll",         text: "Parlemen mengesahkan Infrastructure Bill 50 Triliun: kereta cepat, pelabuhan, jalan tol, rumah sakit kerajaan. Uang besar mengalir." },
+    { pose: "explain",        text: "Mekaniknya sama seperti trial lalu — pilih TIGA dari enam aset growth. Tapi kini kita berburu PELUANG, bukan bertahan dari krisis." },
+    { pose: "pointing-left",  text: "Wager 30 sampai 150, multiplier naik ke kali 1.8. Berpikir ke atas memang lebih sulit daripada bertahan." },
+    { pose: "thinking",       text: "Pertanyaan kunci: sektor mana yang punya operating leverage tertinggi terhadap aliran dana ini? Siapa yang paling menyerap proyek raksasa ini?" },
+    { pose: "cheer",          text: "Saat kerajaan makmur, tiga kuda akan melesat... Ayo, Trial Keenam!" }
+  ]},
+  r7: { countdown: true, lines: [
+    { pose: "present",        text: "Trial ketujuh: The Earnings Verdict. Musim laporan keuangan tiba." },
+    { pose: "scroll",         text: "Enam emiten Lyndell merilis kinerja kuartalan. Tapi ingat — pertumbuhan tinggi tak selalu berarti perusahaan sehat." },
+    { pose: "magnifier",      text: "Tugas kalian: pilih TIGA emiten dengan fundamental paling KUAT. Bukan yang growth-nya paling besar, tapi yang paling sehat." },
+    { pose: "explain",        text: "Bacalah margin, utang, dan profitabilitas. Paket trio, wager 30 sampai 150, multiplier kali 2.0 — stakes makin tinggi." },
+    { pose: "thinking",       text: "Jangan tertipu angka yang berkilau. Growth tinggi tanpa laba dan margin sehat hanyalah jebakan." },
+    { pose: "cheer",          text: "Angka tidak berbohong — bacalah buku besarnya... Ayo, Trial Ketujuh!" }
+  ]},
+  r8: { countdown: true, lines: [
+    { pose: "shocked",        text: "Trial kedelapan: The Devaluation Gambit. Mahkota Lyndell goyah." },
+    { pose: "scroll",         text: "Crown Coin anjlok 30% terhadap mata uang asing. Biaya impor melonjak; produk ekspor jadi jauh lebih kompetitif di dunia." },
+    { pose: "explain",        text: "Seperti Trial keempat — bagi 100 ke LIMA saham. Tapi kini medannya kurs: eksportir berpesta, importir kelaparan." },
+    { pose: "pointing-right", text: "Wager 100, multiplier kali 2.2. Pikirkan: siapa yang untung dari koin yang melemah, dan siapa yang menderita?" },
+    { pose: "mock",           text: "Dan camkan: tidak ada saham yang selalu menang. Saham favorit di kondisi normal bisa jadi pecundang saat kurs berbalik." },
+    { pose: "cheer",          text: "Saat koin mahkota jatuh... Ayo, baca arahnya, Oracle!" }
+  ]},
+  r9: { countdown: true, lines: [
+    { pose: "present",        text: "Trial kesembilan — puncak dari semua ramalan: The Wonderland IPO Battle!" },
+    { pose: "scroll",         text: "Empat perusahaan baru akan melantai di Lyndell Exchange: Henan, Mirror, Royal Bank, dan Everglow. Masing-masing punya dossier." },
+    { pose: "magnifier",      text: "Ini bukan menebak buta — ini due diligence. Baca profil mereka, cari red flag, cari katalis tersembunyi." },
+    { pose: "explain",        text: "Pilih MAKSIMAL DUA perusahaan, alokasikan 100 di antaranya. Multiplier tertinggi: kali 2.5. Inilah ronde sang juara." },
+    { pose: "thinking",       text: "Keberanian yang berdasar bacaan — bukan ikut-ikutan hype — itulah pembeda Oracle sejati." },
+    { pose: "cheer",          text: "Dua ramalan, empat pendatang baru... Ayo, taruhkan masa depan Lyndell, Oracle!" }
+  ]},
+  bonus: { countdown: true, lines: [
+    { pose: "shocked",        text: "Babak terakhir, para Oracle... dan crystal ball masih bergetar. The Reversals." },
+    { pose: "scroll",         text: "Darurat! Bank of Lyndell menaikkan Crown Rate 150 bps. Inflasi meledak ke 8%. Mordheim mengancam perang. Pasar dilanda panik." },
+    { pose: "explain",        text: "Kondisi yang kalian baca di Trial ketiga kini berbalik 180 derajat. Sektor mana yang paling SURVIVE sekarang?" },
+    { pose: "mock",           text: "Tapi ini ronde opsional. Kalian boleh IKUT — pilih satu sektor, wager 50 sampai 200, multiplier kali 2.5. Atau... SKIP, dan kunci posisi kalian." },
+    { pose: "thinking",       text: "Yang tertinggal — inilah kesempatan terakhir membalik takdir. Yang memimpin — kebijaksanaan kadang berarti melangkah mundur." },
+    { pose: "cheer",          text: "Oracle sejati tak terikat ramalan masa lalu... Ayo, ambil keputusan terakhir kalian!" }
+  ]},
+  closing: { countdown: false, lines: [
+    { pose: "triumphant",     text: "Sembilan trial telah kalian lewati. Ramalan telah lengkap." },
+    { pose: "present",        text: "Kalian telah membaca pasar dalam suka dan duka — bull dan bear, krisis dan kejayaan." },
+    { pose: "bow",            text: "Terima kasih, para Oracle of Lyndell. Sang juara akan dinobatkan di sesi Awarding." },
+    { pose: "triumphant",     text: "Sampai jumpa di balik kabut waktu... The Prophecy is Complete!" }
+  ]}
+};
+const WIZCO_EXPLAINER = {
+  r1: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Jawabannya: B — Double Bottom! SPYR melesat ke 460." },
+    { pose: "magnifier",      text: "Dua titik rendah identik di 380 dengan recovery di tengah adalah sinyal pembalikan arah klasik — bullish reversal." },
+    { pose: "thinking",       text: "Dikonfirmasi volume yang meningkat dan katalis kontrak Bank of Lyndell. Ingat: pola dengan volume adalah ramalan." },
+    { pose: "cheer",          text: "Pemanasan selesai. Ayo, lanjut ke Trial Kedua!" }
+  ]},
+  r2: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Jawabannya: B — NOCT, sang Perbankan!" },
+    { pose: "explain",        text: "Saat Crown Rate naik, bank meminjamkan lebih mahal sementara biaya deposito naik lebih lambat — margin bunga (NIM) melebar." },
+    { pose: "thinking",       text: "Inilah hukum dasar pasar: rate hike memukul growth stock, tapi hadiah bagi bank. Tech, properti, tambang — semua tertekan." },
+    { pose: "cheer",          text: "Satu headline, satu pemenang. Ayo, lanjut ke Trial Ketiga!" }
+  ]},
+  r3: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Jawabannya: A — SPYR, sang Teknologi, menyentuh garis emas duluan!" },
+    { pose: "explain",        text: "Di lingkungan Goldilocks — rate rendah, GDP tumbuh, inflasi jinak — growth stock bernafas paling lega." },
+    { pose: "mock",           text: "Tapi camkan baik-baik, Oracle... kondisi ini bisa berbalik 180 derajat nanti. Yang menang sekarang, belum tentu menang di Bonus." },
+    { pose: "cheer",          text: "Ayo, lanjut ke Trial Keempat!" }
+  ]},
+  r4: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Hasil portofolio terungkap! SPYR melonjak 15%, MIRR naik 8% — sementara GRIN justru turun." },
+    { pose: "explain",        text: "Rate cut adalah angin segar bagi growth: SPYR memimpin. Energi hijau melemah karena subsidi tak relevan di ekonomi yang tumbuh organik." },
+    { pose: "thinking",       text: "Tim yang berani berat di SPYR dan menghindari GRIN — kalian membaca cycle dengan benar." },
+    { pose: "cheer",          text: "Diversifikasi yang bijak terbayar. Ayo, lanjut ke Trial Kelima!" }
+  ]},
+  r5: { countdown: false, lines: [
+    { pose: "celebrate",      text: "The Wise Trio terungkap: Emas, Tunai, dan Obligasi Pemerintah!" },
+    { pose: "explain",        text: "Ketiganya likuid, counter-cyclical, dan tak bergantung pada sektor yang sedang runtuh. Obligasi terbang karena rate cut menaikkan harganya." },
+    { pose: "thinking",       text: "Jebakannya: Deposito terkunci 12 bulan, Bitcoin justru crash 50% di shock awal, dan Saham jelas tumbang. Yang terlihat aman belum tentu aman." },
+    { pose: "cheer",          text: "Kalian bertahan dari badai. Ayo, bangkit ke Trial Keenam!" }
+  ]},
+  r6: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Tiga kuda pemenang: Konstruksi (CSTR), Tambang (RBBT), dan Logistik (LUMN)!" },
+    { pose: "explain",        text: "Dana 50 triliun mengalir ke proyek bangunan — kontraktor, pemasok material, dan distribusi material yang paling diuntungkan." },
+    { pose: "mock",           text: "Yang memilih SPYR Teknologi? Proyek infrastruktur butuh semen dan baja, bukan server cloud." },
+    { pose: "cheer",          text: "Setiap katalis punya pemenang spesifik. Ayo, lanjut ke Trial Ketujuh!" }
+  ]},
+  r7: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Tiga mahkota sehat: QULL, NOCT, dan GRIN!" },
+    { pose: "explain",        text: "Ketiganya profitable, margin stabil, utang terkendali. Itulah fundamental sejati." },
+    { pose: "mock",           text: "Jebakannya: MIRR tumbuh 25% tapi marginnya ambruk; SPYR tumbuh 40% tapi rugi; TARO malah turun. Growth tanpa laba hanyalah ilusi." },
+    { pose: "cheer",          text: "Angka tak berbohong. Ayo, lanjut ke Trial Kedelapan!" }
+  ]},
+  r8: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Saat Crown Coin jatuh, eksportir berpesta! RBBT melonjak 20%, GRIN naik 9%." },
+    { pose: "explain",        text: "Eksportir menjual ke dunia dengan harga lebih tinggi. Importir seperti MIRR dan SPYR kelaparan — bahan baku impor jadi mahal." },
+    { pose: "thinking",       text: "Lihat? SPYR, sang favorit, kini jadi pecundang. Tidak ada saham yang selalu menang — konteks makro yang menentukan." },
+    { pose: "cheer",          text: "Ayo, menuju ronde puncak — Trial Kesembilan!" }
+  ]},
+  r9: { countdown: false, lines: [
+    { pose: "triumphant",     text: "Listing Day terungkap! Everglow LULUS uji klinis — melesat 100%! Henan twist akuisisi — naik 50%!" },
+    { pose: "explain",        text: "Royal Bank stabil naik 5%. Tapi Mirror Retail? Skandal audit terkonfirmasi — jatuh 60%." },
+    { pose: "magnifier",      text: "Watch Indicator di dossier sudah memperingatkan: red flag Mirror, katalis Everglow, rumor akuisisi Henan. Inilah due diligence — bukan ikut hype." },
+    { pose: "cheer",          text: "Ronde puncak telah usai. Satu ramalan terakhir menanti... Ayo, ke Bonus Round!" }
+  ]},
+  bonus: { countdown: false, lines: [
+    { pose: "celebrate",      text: "Jawabannya: QULL atau NOCT — keduanya bertahan!" },
+    { pose: "explain",        text: "Rate hike darurat + inflasi meledak + ancaman perang = bear market. Defensive QULL tetap dibutuhkan, dan bank NOCT diuntungkan margin yang melebar." },
+    { pose: "mock",           text: "Yang memilih SPYR? Kalian terikat pada ramalan Trial ketiga dan lupa kondisi sudah berbalik. Yang SKIP — kalian memilih kebijaksanaan." },
+    { pose: "triumphant",     text: "Oracle sejati tak terikat masa lalu. Ramalan telah lengkap... Ayo, menuju penobatan!" }
+  ]}
+};

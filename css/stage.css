@@ -1147,28 +1147,38 @@ html, body {
   transform-origin: 50% 100%;
 }
 
-/* Speech bubble (RPG) di kanan-bawah; melar mengikuti konten (bg 100% 100%) */
-.wd-bubble {
-  position: absolute; left: 30vw; right: 4vw; bottom: 5vh;
-  min-height: 20vh; box-sizing: border-box;
-  background-repeat: no-repeat; background-size: 100% 100%; background-position: center;
-  display: flex; align-items: center;
-  padding: 5.5vh 5vw 6vh 5vw;
+/* REVISI 6A — Glow emas KECIL & TIPIS di belakang bubble (img glow-gold, opacity rendah) */
+.wd-bubble-glow {
+  position: absolute; left: 56%; top: 58%;
+  transform: translate(-50%, -50%);
+  width: 64vw; max-width: 1240px; height: auto;
+  opacity: 0; pointer-events: none; mix-blend-mode: screen;
 }
-/* Fallback bila speech-bubble.png hilang → panel translucent (tetap kebaca) */
-.wd-bubble--fallback {
-  background-image: none !important;
-  background-color: rgba(11, 24, 56, 0.82);
-  border: 2px solid rgba(201, 169, 97, 0.7);
-  border-radius: 28px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+
+/* REVISI 6A — Bubble = panel CSS parchment (TANPA gambar), besar di tengah, auto-height.
+   Wizco (kiri ~25vw) tidak menutupi: bubble dipusatkan di 56% (tengah/kanan-tengah). */
+.wd-bubble {
+  position: absolute; left: 56%; top: 58%;
+  transform: translate(-50%, -50%);
+  width: 56vw; max-width: 1100px; box-sizing: border-box;
+  padding: 4vh 3.4vw;
+  background: linear-gradient(160deg, rgba(248, 240, 214, 0.97), rgba(244, 232, 200, 0.95));
+  border: 3px solid #C9A961; border-radius: 18px;
+  box-shadow: 0 0 26px rgba(201, 169, 97, 0.45),
+              0 18px 50px rgba(0, 0, 0, 0.5);
+}
+/* Aksen frame dalam tipis (RPG, simpel) */
+.wd-bubble::before {
+  content: ""; position: absolute; inset: 7px;
+  border: 1px solid rgba(201, 169, 97, 0.5); border-radius: 12px;
+  pointer-events: none;
 }
 .wd-text {
-  color: #F4E8C8;
+  position: relative;
+  color: #122247;
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 2.9vh; font-weight: 600; line-height: 1.5;
+  font-size: 3vh; font-weight: 600; line-height: 1.55;
   text-align: left; white-space: pre-wrap;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
 /* Countdown 3-2-1-GO di tengah (emas glow, pop scale via GSAP) */
