@@ -2090,9 +2090,8 @@
   }
 
   function wdOnLineFull() {
-    const isLast = wdLineIndex >= wdData.lines.length - 1;
-    if (isLast && wdData.countdown === true) wdStartCountdown();
-    // else: tunggu SPACE (lanjut baris / onComplete).
+    // REVISI — TIDAK auto-countdown. Selalu tunggu SPACE operator di baris terakhir
+    // (countdown:true → wdBeginCountdown saat SPACE · countdown:false → onComplete saat SPACE).
   }
 
   // SPACE saat overlay aktif.
@@ -2101,15 +2100,30 @@
     if (wdTyping) { wdFinishTyping(); return; }
     const isLast = wdLineIndex >= wdData.lines.length - 1;
     if (!isLast) { wdShowLine(wdLineIndex + 1); return; }
-    if (wdData.countdown === true) return;   // countdown otomatis menangani akhir
-    wdComplete();
+    // Baris terakhir penuh:
+    if (wdData.countdown === true) { wdBeginCountdown(); return; }  // REVISI — SPACE memicu countdown
+    wdComplete();                                                   // countdown:false → langsung selesai
   }
 
-  function wdStartCountdown() {
+  // REVISI — dipicu SPACE di baris terakhir: sembunyikan bubble dulu (~0.25s), BARU countdown.
+  function wdBeginCountdown() {
     if (wdCountingDown) return;
-    wdCountingDown = true;
+    wdCountingDown = true;            // kunci SPACE selama fade + countdown
     wdSetPose("cheer");
-    // REVISI 2 — jeda PER ANGKA 1 detik penuh (3→2→1), GO ~0.8s, lalu onComplete.
+    if (window.gsap && wdBubbleEl) {
+      gsap.to(wdBubbleEl, { opacity: 0, duration: 0.25, ease: "power1.in" });
+      if (wdBubbleGlow) gsap.to(wdBubbleGlow, { opacity: 0, duration: 0.25, ease: "power1.in" });
+      wdTimers.push(setTimeout(wdRunCountdownSeq, 260));   // layar bersih, baru angka
+    } else {
+      if (wdBubbleEl) wdBubbleEl.style.opacity = "0";
+      if (wdBubbleGlow) wdBubbleGlow.style.opacity = "0";
+      wdRunCountdownSeq();
+    }
+  }
+
+  function wdRunCountdownSeq() {
+    if (!wdActive) return;
+    // jeda PER ANGKA 1 detik penuh (3→2→1), GO ~0.8s, lalu onComplete.
     const seq = [
       { label: "3",   sfx: TICK_SFX, vol: 0.45, hold: 1000 },
       { label: "2",   sfx: TICK_SFX, vol: 0.45, hold: 1000 },
