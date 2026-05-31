@@ -109,6 +109,7 @@
   let revealParticleTimer = null;  // setInterval spawn spark reveal
   let revealStampTimer = null;     // setTimeout stamp setelah flip selesai
   let revealCelebrateTimer = null; // setTimeout sembunyikan wizco celebrate
+  let revealTwoStageTimer = null;  // V12 Fase 3 — setTimeout crash MRRT (R9) tahap-2
 
   // V11 Fase 4 — state mode krisis merah (R5)
   let crisisPulseTween = null;     // GSAP tween denyut vignette merah (yoyo)
@@ -1192,17 +1193,34 @@
     if (s.charAt(0) !== "+" && s.charAt(0) !== "-") s = "+" + s;
     return s + "%";
   }
+  // Badge delta tunggal (hijau +/merah -). Dipakai default & two-stage R9.
+  function makeDeltaBadge(deltaRaw) {
+    const positive = String(deltaRaw).trim().charAt(0) !== "-";
+    const badge = document.createElement("div");
+    badge.className = "soal-delta " + (positive ? "soal-delta-up" : "soal-delta-down");
+    badge.textContent = formatDelta(deltaRaw);
+    return badge;
+  }
+  function makeFlagLabel(text) {
+    const el = document.createElement("div");
+    el.className = "soal-flag"; el.textContent = text;
+    return el;
+  }
   function revealAllocDelta(ans, animate) {
     const results = ans.results || [];
     results.forEach((r, n) => {
       const slot = soalCardsEl.children[r.i];
       if (!slot) return;
+
+      // V12 Fase 3 (R9) — MRRT dua tahap: "pop" hari-1 (hijau) → jeda dramatis → SKANDAL (merah).
+      // Hanya saat animate penuh; recovery statis (snap/prev) langsung tampil hasil akhir.
+      if (r.pop && animate && window.gsap) { revealAllocTwoStage(slot, r, n); return; }
+
       const positive = String(r.delta).trim().charAt(0) !== "-";
       slot.classList.add(positive ? "rv-up" : "rv-down");
-      const badge = document.createElement("div");
-      badge.className = "soal-delta " + (positive ? "soal-delta-up" : "soal-delta-down");
-      badge.textContent = formatDelta(r.delta);
+      const badge = makeDeltaBadge(r.delta);
       slot.appendChild(badge);
+      if (r.flag && !positive) slot.appendChild(makeFlagLabel(r.flag));   // snap: label langsung
       if (window.gsap && animate) {
         gsap.fromTo(badge,
           { opacity: 0, scale: 0.6, y: 18, xPercent: -50 },
@@ -1210,6 +1228,40 @@
             ease: "back.out(2)", delay: n * 0.16, transformOrigin: "50% 50%" });
       }
     });
+  }
+  // V12 Fase 3 (R9) — MRRT: pop hijau dulu, tahan ~1.2s, lalu flip ke merah + label SKANDAL.
+  function revealAllocTwoStage(slot, r, n) {
+    slot.classList.add("rv-up");
+    const badge = makeDeltaBadge(r.pop);              // tahap 1: "+35" hijau
+    slot.appendChild(badge);
+    gsap.fromTo(badge,
+      { opacity: 0, scale: 0.6, y: 18, xPercent: -50 },
+      { opacity: 1, scale: 1, y: 0, xPercent: -50, duration: 0.5,
+        ease: "back.out(2)", delay: n * 0.16, transformOrigin: "50% 50%" });
+
+    const delayMs = (n * 0.16 + 0.5) * 1000 + 1200;   // selesai pop + jeda dramatis 1.2s
+    revealTwoStageTimer = setTimeout(function () {
+      playSfx("revealRedFlag");                        // buzz "wrong" (sfx-07, sudah ada)
+      const tl = gsap.timeline();
+      tl.to(badge, { opacity: 0, scale: 0.6, y: 10, xPercent: -50, duration: 0.22, ease: "power2.in",
+        onComplete: function () {
+          slot.classList.remove("rv-up"); slot.classList.add("rv-down");
+          badge.className = "soal-delta soal-delta-down";
+          badge.textContent = formatDelta(r.delta);    // "-60%"
+        } });
+      tl.fromTo(badge,
+        { opacity: 0, scale: 1.5, y: 10, rotation: -8, xPercent: -50 },
+        { opacity: 1, scale: 1, y: 0, rotation: 0, xPercent: -50, duration: 0.45,
+          ease: "back.out(2.2)", transformOrigin: "50% 50%" });
+      if (r.flag) {
+        const flag = makeFlagLabel(r.flag);            // tahap 2: label SKANDAL
+        slot.appendChild(flag);
+        gsap.fromTo(flag,
+          { opacity: 0, scale: 1.4, xPercent: -50, rotation: -6 },
+          { opacity: 1, scale: 1, xPercent: -50, rotation: -6, duration: 0.4,
+            ease: "back.out(2)", delay: 0.12, transformOrigin: "50% 50%" });
+      }
+    }, delayMs);
   }
 
   // Overlay dekoratif tematik per ronde (di sekitar/belakang panel, 404-safe).
@@ -1262,6 +1314,7 @@
     if (revealParticleTimer) { clearTimeout(revealParticleTimer); revealParticleTimer = null; }
     if (revealStampTimer) { clearTimeout(revealStampTimer); revealStampTimer = null; }
     if (revealCelebrateTimer) { clearTimeout(revealCelebrateTimer); revealCelebrateTimer = null; }
+    if (revealTwoStageTimer) { clearTimeout(revealTwoStageTimer); revealTwoStageTimer = null; }
     boardEl.querySelectorAll(".soal-reveal-flash, .soal-reveal-glow, .soal-reveal-particles, .soal-reveal-overlay, .crisis-lightning")
       .forEach((e) => e.remove());
     if (window.gsap) {
@@ -1276,7 +1329,7 @@
     }
     soalCardsEl.querySelectorAll(".soal-slot").forEach((slot) => {
       slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down", "rv-locked");
-      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta, .soal-locked-tag").forEach((s) => s.remove());
+      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta, .soal-flag, .soal-locked-tag").forEach((s) => s.remove());
     });
   }
 

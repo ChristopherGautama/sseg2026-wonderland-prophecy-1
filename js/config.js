@@ -139,7 +139,7 @@ const ANSWERS = {
   r6: { type:"multi", correct:[0,1,2], trap:[3,4,5], note:"Trio katalis: CSTR + RBBT + LUMN." },
   r7: { type:"multi", correct:[0,2,4], trap:[1,3,5], note:"Trio sehat: QULL + NOCT + GRIN. Trap: MIRR/SPYR/TARO." },
   r8: { type:"alloc", results:[ {i:0,delta:"+20"},{i:1,delta:"+9"},{i:2,delta:"+2"},{i:3,delta:"-8"},{i:4,delta:"-6"} ], note:"RBBT & GRIN terbaik (ekspor); MIRR/SPYR rugi." },
-  r9: { type:"alloc", results:[ {i:3,delta:"+100"},{i:0,delta:"+50"},{i:2,delta:"+5"},{i:1,delta:"-60"} ], note:"EVRG juara; HNPR kuat; MRRT jeblok." },
+  r9: { type:"alloc", results:[ {i:3,delta:"+100"},{i:0,delta:"+50"},{i:2,delta:"+10"},{i:1,delta:"-60",pop:"+35",flag:"SKANDAL"} ], note:"EVRG juara; HNPR kuat; LRBK stabil; MRRT pop hari-1 lalu skandal audit." }, // V12 Fase 3
   bonus: { type:"multi", correct:[0,1], trap:[2,3], note:"QULL atau NOCT bertahan. (SKIP = aman, tak untung-rugi.)" }
 };
 

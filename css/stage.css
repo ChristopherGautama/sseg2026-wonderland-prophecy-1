@@ -1092,6 +1092,20 @@ html, body {
 .soal-delta-up   { background: #2E7D5B; }
 .soal-delta-down { background: #C0392B; }
 
+/* V12 Fase 3 (R9) — label "SKANDAL" di kartu MRRT saat crash (teks, tanpa aset) */
+.soal-flag {
+  position: absolute; top: -22px; left: 50%;
+  transform: translateX(-50%) rotate(-6deg);
+  padding: 6px 18px;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 26px; letter-spacing: 3px;
+  color: #F4E8C8; background: #8B1E3F;
+  border: 2px solid rgba(244, 232, 200, 0.85);
+  border-radius: 6px; z-index: 6; white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
 /* ============================================================
    V11 Fase 7 — BONUS (The Reversals): badge SKIP (pill), kartu SKIP netral,
    tag "POSITION LOCKED", + fallback kartu SKIP bila gambar 404.
