@@ -1116,3 +1116,74 @@ html, body {
   filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.55));
 }
 .soal-celebrate.show { display: block; }
+
+/* ============================================================
+   V11 Fase 6A — MESIN SCENE DIALOG WIZCO (overlay full-viewport).
+   DOM dibangun di js/stage.js & di-append ke <body> (di atas #stage).
+   Pakai unit vh/vw (viewport), bukan koordinat stage yang di-scale.
+   ============================================================ */
+#wizco-dialogue {
+  position: fixed; inset: 0;
+  z-index: 300; overflow: hidden;
+  pointer-events: none; opacity: 0;
+}
+.wd-bg {
+  position: absolute; inset: 0;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  transform-origin: 50% 50%; will-change: transform;
+}
+.wd-dim { position: absolute; inset: 0; background: rgba(6, 10, 24, 0.45); }
+
+/* Wizco BESAR di kiri (tinggi ~70vh, rasio terjaga via contain) */
+.wd-wizco {
+  position: absolute; left: 2vw; bottom: 0;
+  height: 72vh; display: flex; align-items: flex-end;
+  will-change: transform;
+}
+.wd-wizco-img {
+  height: 70vh; width: auto; object-fit: contain; display: block;
+  filter: drop-shadow(0 0 26px rgba(212, 175, 55, 0.45))
+          drop-shadow(0 12px 30px rgba(0, 0, 0, 0.6));
+  transform-origin: 50% 100%;
+}
+
+/* Speech bubble (RPG) di kanan-bawah; melar mengikuti konten (bg 100% 100%) */
+.wd-bubble {
+  position: absolute; left: 30vw; right: 4vw; bottom: 5vh;
+  min-height: 20vh; box-sizing: border-box;
+  background-repeat: no-repeat; background-size: 100% 100%; background-position: center;
+  display: flex; align-items: center;
+  padding: 5.5vh 5vw 6vh 5vw;
+}
+/* Fallback bila speech-bubble.png hilang → panel translucent (tetap kebaca) */
+.wd-bubble--fallback {
+  background-image: none !important;
+  background-color: rgba(11, 24, 56, 0.82);
+  border: 2px solid rgba(201, 169, 97, 0.7);
+  border-radius: 28px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+.wd-text {
+  color: #F4E8C8;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 2.9vh; font-weight: 600; line-height: 1.5;
+  text-align: left; white-space: pre-wrap;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Countdown 3-2-1-GO di tengah (emas glow, pop scale via GSAP) */
+.wd-countdown {
+  position: absolute; left: 50%; top: 44%;
+  transform: translate(-50%, -50%);
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 32vh; line-height: 1; color: #F4D77A;
+  text-shadow: 0 0 40px rgba(244, 215, 122, 0.85),
+               0 0 96px rgba(201, 169, 97, 0.6),
+               0 6px 18px rgba(0, 0, 0, 0.6);
+  opacity: 0; pointer-events: none;
+}
+.wd-hint {
+  position: absolute; right: 2vw; bottom: 1.5vh;
+  font-family: Georgia, serif; font-size: 1.7vh; letter-spacing: 1px;
+  color: rgba(244, 232, 200, 0.6);
+}

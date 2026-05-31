@@ -1813,8 +1813,272 @@
   }
 
   // ---------- e) Keyboard ----------
+  // ============================================================
+  // V11 Fase 6A — MESIN SCENE DIALOG WIZCO (berdiri sendiri; BELUM disambung ke alur).
+  // playWizcoDialogue({ data, bgKey, onComplete }):
+  //   data = { countdown:bool, lines:[{pose,text}] } (mis. WIZCO_BRIEFING.r1 dari config.js).
+  //   bgKey → background (ASSETS.bg[bgKey], fallback path bg-<key>.png).
+  //   onComplete → dipanggil saat dialog selesai (di 6A: tutup overlay).
+  // Aman jika aset/SFX hilang (fallback pose explain + bubble panel; tidak crash).
+  // ============================================================
+  const WD_TYPE_MS  = 28;                                    // ms per karakter (typewriter)
+  const WD_TYPE_SFX = "assets/audio/sfx/sfx-01-click.mp3";   // bunyi ketik halus (volume rendah)
+  const WD_FALLBACK_POSE = "assets/img/wizco/wizco-explain.png";
+
+  let wdActive = false;
+  let wdRoot = null, wdBgEl = null, wdWizcoWrap = null, wdWizcoImg = null,
+      wdTextEl = null, wdCountEl = null;
+  let wdData = null, wdOnComplete = null;
+  let wdLineIndex = 0;
+  let wdTyping = false, wdFullText = "", wdCharPos = 0;
+  let wdTypeInterval = null;
+  let wdCountingDown = false, wdCompleted = false;
+  let wdTimers = [];
+
+  function wdResolveBg(bgKey) {
+    if (typeof ASSETS !== "undefined" && ASSETS.bg && ASSETS.bg[bgKey]) return ASSETS.bg[bgKey];
+    if (bgKey === "opening") return "assets/img/bg/bg-opening.png";
+    if (bgKey === "closing") return "assets/img/bg/bg-closing.png";
+    if (bgKey === "bonus")   return "assets/img/bg/bg-bonus.png";
+    return "assets/img/bg/bg-" + bgKey + ".png";
+  }
+
+  function wdBuildOverlay(bgPath) {
+    const root = document.createElement("div");
+    root.id = "wizco-dialogue";
+
+    const bg = document.createElement("div");
+    bg.className = "wd-bg";
+    if (bgPath) bg.style.backgroundImage = 'url("' + bgPath + '")';
+
+    const dim = document.createElement("div");
+    dim.className = "wd-dim";
+
+    const wrap = document.createElement("div");
+    wrap.className = "wd-wizco";
+    const wiz = document.createElement("img");
+    wiz.className = "wd-wizco-img"; wiz.alt = "";
+    wrap.appendChild(wiz);
+
+    const bubble = document.createElement("div");
+    bubble.className = "wd-bubble";
+    const bubbleSrc = (typeof ASSETS !== "undefined" && ASSETS.ui && ASSETS.ui.speechBubble)
+      ? ASSETS.ui.speechBubble : "assets/img/ui/speech-bubble.png";
+    bubble.style.backgroundImage = 'url("' + bubbleSrc + '")';
+    const probe = new Image();                          // 404 → pakai panel fallback
+    probe.onerror = () => bubble.classList.add("wd-bubble--fallback");
+    probe.src = bubbleSrc;
+    const txt = document.createElement("div");
+    txt.className = "wd-text";
+    bubble.appendChild(txt);
+
+    const count = document.createElement("div");
+    count.className = "wd-countdown";
+
+    const hint = document.createElement("div");
+    hint.className = "wd-hint";
+    hint.textContent = "SPACE ▶ lanjut · Esc ✕ tutup";
+
+    root.appendChild(bg); root.appendChild(dim);
+    root.appendChild(wrap); root.appendChild(bubble);
+    root.appendChild(count); root.appendChild(hint);
+    document.body.appendChild(root);
+
+    wdRoot = root; wdBgEl = bg; wdWizcoWrap = wrap; wdWizcoImg = wiz;
+    wdTextEl = txt; wdCountEl = count;
+  }
+
+  function wdSetPose(pose) {
+    if (!wdWizcoImg) return;
+    wdWizcoImg.onerror = () => { wdWizcoImg.onerror = null; wdWizcoImg.src = WD_FALLBACK_POSE; };
+    wdWizcoImg.src = "assets/img/wizco/wizco-" + (pose || "explain") + ".png";
+  }
+
+  function wdClearTimers() {
+    wdTimers.forEach((t) => clearTimeout(t));
+    wdTimers = [];
+    if (wdTypeInterval) { clearInterval(wdTypeInterval); wdTypeInterval = null; }
+  }
+
+  // ---- API utama ----
+  function playWizcoDialogue(opts) {
+    opts = opts || {};
+    const data = opts.data;
+    if (!data || !Array.isArray(data.lines) || !data.lines.length) {
+      console.warn("[Wizco 6A] data dialog kosong/format salah — dilewati.");
+      return;
+    }
+    if (wdActive || wdRoot) wdTeardownNow();   // reset INSTAN bila ada sisa overlay
+
+    wdData = data;
+    wdOnComplete = (typeof opts.onComplete === "function") ? opts.onComplete : function () {};
+    wdLineIndex = 0; wdTyping = false; wdCountingDown = false; wdCompleted = false;
+    wdClearTimers();
+
+    wdBuildOverlay(wdResolveBg(opts.bgKey));
+    wdActive = true;
+
+    // Masuk: overlay fade-in · wizco slide-in dari kiri · bg slow-zoom halus.
+    if (window.gsap) {
+      gsap.fromTo(wdRoot, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" });
+      gsap.fromTo(wdWizcoWrap, { xPercent: -120, opacity: 0 },
+        { xPercent: 0, opacity: 1, duration: 0.8, ease: "power3.out", onComplete: wdStartIdleFloat });
+      gsap.fromTo(wdBgEl, { scale: 1.0 },
+        { scale: 1.08, duration: 16, ease: "sine.inOut", yoyo: true, repeat: -1, transformOrigin: "50% 50%" });
+    } else {
+      wdRoot.style.opacity = "1"; wdWizcoWrap.style.opacity = "1";
+    }
+    wdShowLine(0);
+  }
+
+  function wdStartIdleFloat() {
+    if (!wdActive || !window.gsap || !wdWizcoWrap) return;
+    gsap.to(wdWizcoWrap, { y: -18, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  }
+
+  function wdShowLine(i) {
+    const line = wdData.lines[i];
+    if (!line) return;
+    wdLineIndex = i;
+    wdSetPose(line.pose);
+    if (window.gsap && wdWizcoImg) {           // talking bounce kecil
+      gsap.fromTo(wdWizcoImg, { scale: 1 },
+        { scale: 1.05, duration: 0.12, ease: "power1.out", yoyo: true, repeat: 1, transformOrigin: "50% 100%" });
+    }
+    wdTypeStart(String(line.text || ""));
+  }
+
+  function wdTypeStart(text) {
+    wdFullText = text; wdCharPos = 0; wdTyping = true;
+    if (wdTextEl) wdTextEl.textContent = "";
+    if (wdTypeInterval) { clearInterval(wdTypeInterval); wdTypeInterval = null; }
+    wdTypeInterval = setInterval(() => {
+      wdCharPos++;
+      if (wdTextEl) wdTextEl.textContent = wdFullText.slice(0, wdCharPos);
+      if (wdCharPos % 3 === 0) playOneShot(WD_TYPE_SFX, 0.22);   // ketik tiap 3 char (tak berisik)
+      if (wdCharPos >= wdFullText.length) {
+        clearInterval(wdTypeInterval); wdTypeInterval = null;
+        wdTyping = false;
+        wdOnLineFull();
+      }
+    }, WD_TYPE_MS);
+  }
+
+  function wdFinishTyping() {
+    if (wdTypeInterval) { clearInterval(wdTypeInterval); wdTypeInterval = null; }
+    wdCharPos = wdFullText.length;
+    if (wdTextEl) wdTextEl.textContent = wdFullText;
+    wdTyping = false;
+    wdOnLineFull();
+  }
+
+  function wdOnLineFull() {
+    const isLast = wdLineIndex >= wdData.lines.length - 1;
+    if (isLast && wdData.countdown === true) wdStartCountdown();
+    // else: tunggu SPACE (lanjut baris / onComplete).
+  }
+
+  // SPACE saat overlay aktif.
+  function wdAdvance() {
+    if (!wdActive || wdCountingDown) return;
+    if (wdTyping) { wdFinishTyping(); return; }
+    const isLast = wdLineIndex >= wdData.lines.length - 1;
+    if (!isLast) { wdShowLine(wdLineIndex + 1); return; }
+    if (wdData.countdown === true) return;   // countdown otomatis menangani akhir
+    wdComplete();
+  }
+
+  function wdStartCountdown() {
+    if (wdCountingDown) return;
+    wdCountingDown = true;
+    wdSetPose("cheer");
+    const seq = [
+      { label: "3",   sfx: TICK_SFX, vol: 0.45 },
+      { label: "2",   sfx: TICK_SFX, vol: 0.45 },
+      { label: "1",   sfx: BELL_SFX, vol: 0.5 },
+      { label: "GO!", sfx: BELL_SFX, vol: 0.6 }
+    ];
+    let n = 0;
+    function stepCount() {
+      if (!wdActive) return;
+      if (n >= seq.length) { wdComplete(); return; }
+      const it = seq[n++];
+      wdShowCountNumber(it.label);
+      playOneShot(it.sfx, it.vol);
+      wdTimers.push(setTimeout(stepCount, 700));
+    }
+    stepCount();
+  }
+
+  function wdShowCountNumber(label) {
+    if (!wdCountEl) return;
+    wdCountEl.textContent = label;
+    if (window.gsap) {
+      gsap.killTweensOf(wdCountEl);
+      gsap.set(wdCountEl, { opacity: 0, scale: 0.6 });
+      gsap.timeline()
+        .to(wdCountEl, { opacity: 1, scale: 1, duration: 0.34, ease: "back.out(2)" })
+        .to(wdCountEl, { opacity: 0, scale: 1.12, duration: 0.24, ease: "power1.in" }, 0.5);
+    } else {
+      wdCountEl.style.opacity = "1";
+    }
+  }
+
+  function wdComplete() {
+    if (wdCompleted) return;
+    wdCompleted = true;
+    if (typeof wdOnComplete === "function") wdOnComplete();
+  }
+
+  function closeWizcoDialogue() {
+    if (!wdActive && !wdRoot) return;
+    wdActive = false; wdCountingDown = false;
+    wdClearTimers();
+    if (window.gsap && wdRoot) {
+      gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdCountEl]);
+      gsap.to(wdRoot, { opacity: 0, duration: 0.3, ease: "power1.in", onComplete: wdRemoveOverlay });
+    } else {
+      wdRemoveOverlay();
+    }
+  }
+
+  function wdRemoveOverlay() {
+    if (wdRoot && wdRoot.parentNode) wdRoot.parentNode.removeChild(wdRoot);
+    wdRoot = wdBgEl = wdWizcoWrap = wdWizcoImg = wdTextEl = wdCountEl = null;
+  }
+
+  // Teardown INSTAN (tanpa fade) — dipakai saat membuka ulang overlay.
+  function wdTeardownNow() {
+    wdActive = false; wdCountingDown = false;
+    wdClearTimers();
+    if (window.gsap && wdRoot) gsap.killTweensOf([wdRoot, wdWizcoWrap, wdWizcoImg, wdBgEl, wdCountEl]);
+    wdRemoveOverlay();
+  }
+
+  // TEMP (V11 Fase 6A) — buka preview; onComplete cukup tutup overlay. Hapus saat 6B/6C.
+  function wdPreview(data, bgKey) {
+    if (!data) {
+      console.warn("[Wizco 6A] WIZCO_BRIEFING/WIZCO_EXPLAINER belum ada di config.js — tak bisa preview.");
+      return;
+    }
+    playWizcoDialogue({ data: data, bgKey: bgKey, onComplete: closeWizcoDialogue });
+  }
+
   function onKeydown(e) {
     unlockAudio();   // Fase C3 — interaksi pertama membuka audio
+
+    // TEMP (V11 Fase 6A) — preview mesin dialog Wizco sebagai overlay. Hapus saat 6B/6C.
+    if (wdActive) {
+      if (e.key === "Escape") { e.preventDefault(); closeWizcoDialogue(); return; }
+      if (e.key === " " || e.key === "ArrowRight") { e.preventDefault(); wdAdvance(); return; }
+      return;   // overlay preview aktif → kunci navigasi scene utama
+    }
+    if (e.key === "9") { e.preventDefault();
+      wdPreview(typeof WIZCO_BRIEFING !== "undefined" ? WIZCO_BRIEFING.r1 : null, "r1"); return; }
+    if (e.key === "0") { e.preventDefault();
+      wdPreview(typeof WIZCO_EXPLAINER !== "undefined" ? WIZCO_EXPLAINER.r1 : null, "r1"); return; }
+    // END TEMP
+
     switch (e.key) {
       case " ":
       case "ArrowRight":
