@@ -198,10 +198,10 @@ const WIZCO_BRIEFING = {
   r3: { countdown: true, lines: [
     { pose: "present",        text: "Trial ketiga: Sector Race. Empat sektor berdiri di garis start." },
     { pose: "magnifier",      text: "Kondisi makro Lyndell sedang manis — Crown Rate stabil 5%, GDP tumbuh 4.5%, inflasi terkendali 3.2%, surplus dagang pecah rekor. Inilah Goldilocks." },
-    { pose: "pointing-right", text: "Sektor mana yang menyentuh garis emas lebih dulu dalam 30 hari? Ini bukan satu berita — ini membaca seluruh kondisi pasar." },
+    { pose: "pointing-right", text: "Sektor mana yang naik paling kencang dalam 30 hari ke depan? Ini bukan satu berita — ini membaca seluruh kondisi pasar." },
     { pose: "explain",        text: "Pilih satu sektor, wager 20 sampai 100, multiplier naik jadi kali 1.2." },
     { pose: "mock",           text: "Tapi ingat, para Oracle... kondisi manis hari ini bisa berbalik 180 derajat nanti. Yang menang sekarang, belum tentu menang selamanya." },
-    { pose: "cheer",          text: "Siapa yang tercepat ke garis emas? Ayo, Trial Ketiga!" }
+    { pose: "cheer", text: "Siapa yang melesat paling kencang? Ayo, Trial Ketiga!" }
   ]},
   r4: { countdown: true, lines: [
     { pose: "present",        text: "Trial keempat: The Oracle's Portfolio. Mulai sekarang, kalian bukan lagi peramal sektor tunggal." },
@@ -252,12 +252,11 @@ const WIZCO_BRIEFING = {
     { pose: "cheer",          text: "Dua ramalan, empat pendatang baru... Ayo, taruhkan masa depan Lyndell, Oracle!" }
   ]},
   bonus: { countdown: true, lines: [
-    { pose: "shocked",        text: "Babak terakhir, para Oracle... dan crystal ball masih bergetar. The Reversals." },
-    { pose: "scroll",         text: "Darurat! Bank of Lyndell menaikkan Crown Rate 150 bps. Inflasi meledak ke 8%. Mordheim mengancam perang. Pasar dilanda panik." },
-    { pose: "explain",        text: "Kondisi yang kalian baca di Trial ketiga kini berbalik 180 derajat. Sektor mana yang paling SURVIVE sekarang?" },
-    { pose: "mock",           text: "Tapi ini ronde opsional. Kalian boleh IKUT — pilih satu sektor, wager 50 sampai 200, multiplier kali 2.5. Atau... SKIP, dan kunci posisi kalian." },
-    { pose: "thinking",       text: "Yang tertinggal — inilah kesempatan terakhir membalik takdir. Yang memimpin — kebijaksanaan kadang berarti melangkah mundur." },
-    { pose: "cheer",          text: "Oracle sejati tak terikat ramalan masa lalu... Ayo, ambil keputusan terakhir kalian!" }
+    { pose: "present",        text: "Malam telah larut, para Oracle. Tujuh trial telah kalian lewati." },
+    { pose: "magnifier",      text: "Tapi kristal masih bergetar — satu ramalan terakhir menanti." },
+    { pose: "thinking",       text: "Ingat kondisi di Trial ketiga? Itu masa lalu. Sekarang dunia berbalik." },
+    { pose: "shocked",        text: "Suku bunga melonjak darurat, inflasi meledak, dan genderang perang Mordheim mulai terdengar." },
+    { pose: "pointing-right", text: "Kerajaan butuh dana besar untuk perang. Sektor mana yang justru PALING DIUNTUNGKAN di tengah badai ini? Pilih satu — atau melangkah pergi dan kunci posisimu." }
   ]},
   closing: { countdown: false, lines: [
     { pose: "triumphant",     text: "Sembilan trial telah kalian lewati. Ramalan telah lengkap." },
@@ -316,15 +315,20 @@ const WIZCO_EXPLAINER = {
     { pose: "cheer",          text: "Ayo, menuju ronde puncak — Trial Kesembilan!" }
   ]},
   r9: { countdown: false, lines: [
-    { pose: "triumphant",     text: "Listing Day terungkap! Everglow LULUS uji klinis — melesat 100%! Henan twist akuisisi — naik 50%!" },
-    { pose: "explain",        text: "Royal Bank stabil naik 5%. Tapi Mirror Retail? Skandal audit terkonfirmasi — jatuh 60%." },
-    { pose: "magnifier",      text: "Watch Indicator di dossier sudah memperingatkan: red flag Mirror, katalis Everglow, rumor akuisisi Henan. Inilah due diligence — bukan ikut hype." },
-    { pose: "cheer",          text: "Ronde puncak telah usai. Satu ramalan terakhir menanti... Ayo, ke Bonus Round!" }
+    { pose: "present",        text: "Listing Day di Lyndell Exchange telah usai. Lihat hasilnya." },
+    { pose: "celebrate",      text: "EVRG — uji klinisnya LULUS, melonjak +100%. Katalis biner: risiko besar, hadiah besar." },
+    { pose: "explain",        text: "HNPR — narasi dan rumor akuisisi terbukti, naik +50%. Di pasar IPO, cerita bisa membakar harga walau belum untung." },
+    { pose: "shocked",        text: "MRRT — inilah jebakannya. Oversubscribed 8 kali, ia MELONJAK di hari pertama. Tapi auditor yang mundur adalah bendera merah — skandal terbongkar, ia anjlok -60%." },
+    { pose: "pointing-right", text: "Pelajaran Oracle: oversubscribed memberitahumu soal lonjakan hari pertama, BUKAN soal apakah perusahaannya nyata. Hype membawamu masuk; fundamental busuk menghempaskanmu keluar." },
+    { pose: "scroll",         text: "LRBK — membosankan, hanya +10%. Tapi jangkar yang aman, tak ikut terbakar." },
+    { pose: "cheer",          text: "Tapi malam belum usai — satu ramalan terakhir, The Reversals, masih menanti." }
   ]},
   bonus: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Jawabannya: QULL atau NOCT — keduanya bertahan!" },
-    { pose: "explain",        text: "Rate hike darurat + inflasi meledak + ancaman perang = bear market. Defensive QULL tetap dibutuhkan, dan bank NOCT diuntungkan margin yang melebar." },
-    { pose: "mock",           text: "Yang memilih SPYR? Kalian terikat pada ramalan Trial ketiga dan lupa kondisi sudah berbalik. Yang SKIP — kalian memilih kebijaksanaan." },
-    { pose: "triumphant",     text: "Oracle sejati tak terikat masa lalu. Ramalan telah lengkap... Ayo, menuju penobatan!" }
+    { pose: "present",        text: "Jawabannya: NOCT — Perbankan." },
+    { pose: "explain",        text: "Saat suku bunga melonjak, margin bunga bank (NIM) melebar — setiap pinjaman jadi lebih menguntungkan." },
+    { pose: "pointing-right", text: "Dan saat perang mengancam, kerajaan butuh dana besar — ia meminjam dari bank dengan bunga tinggi. Bank menjadi pemodal perang." },
+    { pose: "mock",           text: "Tech (SPYR) justru hancur oleh suku bunga tinggi — jebakan bagi yang terpaku pada ramalan Trial ketiga. Properti runtuh karena cicilan mahal." },
+    { pose: "thinking",       text: "Dan QULL? Ia bertahan — tapi hanya selamat, tidak menang. Bertahan dan berpesta adalah dua hal berbeda." },
+    { pose: "triumphant",     text: "Oracle sejati tidak terikat masa lalu. Dengan ini, trial terakhir usai — saksikan siapa yang layak bergelar Oracle of Lyndell." }
   ]}
 };
