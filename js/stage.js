@@ -976,7 +976,7 @@
     r7: ["earnings/earnings-spotlight-gold.png", "earnings/earnings-balance-scale.png"],
     r8: ["devaluation/devaluation-currency-shock.png", "devaluation/devaluation-exporter-glow.png",
          "portfolio/portfolio-coin-cascade.png", "fx-lightning.png"],
-    r9: ["ipo/ipo-confetti-gold.png", "ipo/ipo-opening-bell.png"],
+    r9: ["ipo/ipo-opening-bell.png"], // V12 — confetti-gold dilepas (terlalu ramai); base navy + bell tetap
     bonus: ["fx-lightning.png"]
   };
 
