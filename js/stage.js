@@ -133,8 +133,9 @@
   // Fase C3 — Audio engine (musik babak loop + SFX overlap), offline.
   // Browser blokir audio sebelum interaksi → unlock pada keydown/klik pertama.
   // ============================================================
-  const MUSIC_VOL = 0.5;
-  const SFX_VOL = 0.85;
+  const MUSIC_VOL = 0.5;        // musik = background (sedang)
+  const SFX_VOL = 0.85;         // SFX one-shot = lebih jelas
+  const MUSIC_FADE = 1.0;       // V11 Fase 5 — durasi crossfade musik (detik)
 
   let audioUnlocked = false;   // true setelah interaksi pertama
   let musicEl = null;          // <audio> babak yg sedang loop (single track)
@@ -175,18 +176,55 @@
     return AUDIO.music.briefing;                    // r1–r6 (+ transisinya)
   }
 
-  // Set musik scene aktif. Track sama → tidak restart (seamless antar scene).
+  // V11 Fase 5 — fade volume <audio> bertahap (GSAP kalau ada, else interval). 404-safe.
+  function fadeAudio(el, toVol, dur, onDone) {
+    if (!el) { if (onDone) onDone(); return; }
+    if (window.gsap) {
+      gsap.killTweensOf(el);
+      gsap.to(el, { volume: toVol, duration: dur, ease: "power1.inOut",
+        onComplete: onDone || undefined });
+      return;
+    }
+    const steps = 20, stepMs = (dur * 1000) / steps;
+    const from = el.volume, delta = (toVol - from) / steps;
+    let i = 0;
+    const h = setInterval(() => {
+      i++;
+      el.volume = Math.max(0, Math.min(1, from + delta * i));
+      if (i >= steps) { clearInterval(h); el.volume = toVol; if (onDone) onDone(); }
+    }, stepMs);
+  }
+
+  // Set musik scene aktif. Track SAMA → tidak restart (seamless, jangan fade).
+  // Track BEDA → V11 Fase 5: crossfade — lama fade-out lalu pause, baru fade-in.
   function setSceneMusic(src) {
-    if (src === desiredMusicSrc && musicEl) return;
+    if (src === desiredMusicSrc && musicEl) return;   // lagu sama → biarkan jalan
     desiredMusicSrc = src;
-    if (musicEl) { musicEl.pause(); musicEl = null; }
-    if (!src) return;
-    const a = new Audio(src);
-    a.loop = true;
-    a.volume = muted ? 0 : MUSIC_VOL;
-    a.addEventListener("error", () => console.warn("Music gagal load:", src));
-    musicEl = a;
-    if (audioUnlocked) a.play().catch((e) => console.warn("audio blocked", e));
+
+    const old = musicEl;
+    let next = null;
+    if (src) {
+      next = new Audio(src);
+      next.loop = true;
+      next.volume = 0;
+      next.addEventListener("error", () => console.warn("Music gagal load:", src));
+    }
+    musicEl = next;
+
+    // Belum unlock → jangan main; siapkan volume target, unlockAudio yang memutar.
+    if (!audioUnlocked) {
+      if (old) { try { old.pause(); } catch (e) {} }
+      if (next) next.volume = muted ? 0 : MUSIC_VOL;
+      return;
+    }
+
+    // Crossfade halus (~1s).
+    if (old) fadeAudio(old, 0, MUSIC_FADE, () => { try { old.pause(); } catch (e) {} });
+    if (next) {
+      const target = muted ? 0 : MUSIC_VOL;
+      next.play().catch((e) => console.warn("audio blocked", e));
+      fadeAudio(next, target, MUSIC_FADE);
+    }
   }
 
   // Unlock pada interaksi pertama → langsung mainkan musik babak scene aktif.
@@ -351,7 +389,7 @@
   // ============================================================
   // Fase 3 (v10) — CLOSING title screen (gaya konsisten dgn opening)
   // Self-contained: hanya jalan saat scene "closing". Audio m09-closing
-  // ditangani engine musik; fanfare one-shot dipicu di enterClosing.
+  // ditangani engine musik; chime lembut (bell) one-shot dipicu di enterClosing.
   // ============================================================
   function enterClosing() {
     if (closingActive) return;
@@ -362,7 +400,7 @@
     playClosingIntro();
     startClosingSparks();
     startClosingBgZoom();
-    playSfx("win");                     // one-shot fanfare (sfx-14)
+    playOneShot(BELL_SFX, 0.6);         // V11 Fase 5 — chime lembut (BUKAN fanfare); musik m09-closing
   }
 
   function teardownClosing() {
@@ -1294,6 +1332,9 @@
 
   // Fase 6 — heartbeat 10 detik terakhir (di luar manifest; 404-safe via playOneShot).
   const HEARTBEAT_SFX = "assets/audio/sfx/sfx-18-heartbeat.mp3";
+  // V11 Fase 5 — tick per detik (pelan) + bell chime (timer habis / closing).
+  const TICK_SFX = "assets/audio/sfx/sfx-03-tick.mp3";
+  const BELL_SFX = "assets/audio/sfx/sfx-09-bell.mp3";
 
   // Denyut kecil per detik (GSAP scale; lebih kuat saat urgent). Tak ganggu glow CSS.
   function timerTickPulse() {
@@ -1332,14 +1373,18 @@
       timerRemaining--;
       renderTimerFace();
       timerTickPulse();                                                     // Fase 6 — denyut per detik
-      if (timerRemaining > 0 && timerRemaining <= 10) {
-        playOneShot(HEARTBEAT_SFX, SFX_VOL);                               // 10 detik terakhir: heartbeat
+      // V11 Fase 5 — tick tiap detik; 10 detik terakhir GANTI heartbeat (tidak dobel).
+      if (timerRemaining > 10) {
+        playOneShot(TICK_SFX, 0.4);                                        // tick pelan (tak menutup musik)
+      } else if (timerRemaining > 0) {
+        playOneShot(HEARTBEAT_SFX, 0.7);                                   // 10 detik terakhir: heartbeat
       }
       if (timerRemaining === 0) {
         timerRunning = false;
         timerEl.classList.remove("is-running");
         if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-        playSfx("timerEnd");                                                // 00:00
+        playSfx("timerEnd");                                                // 00:00 (sfx-04-timeup)
+        playOneShot(BELL_SFX, 0.5);                                         // V11 Fase 5 — chime bell 1x
         timerEndFlash();                                                    // sedikit flash
       }
     }
@@ -1688,7 +1733,7 @@
       if (!slot) return;
       later(() => {
         addDelta(slot, r.delta);
-        if (r === winner) { slot.classList.add("rv-winner"); addGlow(slot); playSfx("win"); }
+        if (r === winner) { slot.classList.add("rv-winner"); addGlow(slot); }   // V11 Fase 5 — tanpa fanfare
         else if (val(r) < 0) { slot.classList.add("rv-down"); }
       }, 300 * n);
     });
@@ -1743,7 +1788,10 @@
   // ---------- Mute musik (default TIDAK muted) ----------
   function toggleMute() {
     muted = !muted;
-    if (musicEl) musicEl.volume = muted ? 0 : MUSIC_VOL;
+    if (musicEl) {
+      if (window.gsap) gsap.killTweensOf(musicEl);   // V11 Fase 5 — hentikan fade berjalan
+      musicEl.volume = muted ? 0 : MUSIC_VOL;
+    }
     console.log("Mute:", muted);
   }
 
