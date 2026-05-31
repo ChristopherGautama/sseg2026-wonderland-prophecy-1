@@ -1122,16 +1122,49 @@
     else applyAnswerStamp(animate);          // single (r2/r3)
   }
 
-  // V11 Fase 7 — REVEAL BONUS: A(QULL)&B(NOCT) dua-duanya benar (stamp-confirmed),
-  // C(SPYR)&D(Property) redup + red-flag, SKIP = netral "POSITION LOCKED" (bukan salah).
+  // V12 Fase 4 — REVEAL BONUS: B(NOCT) WINNER tunggal (emas + MENANG);
+  // A(QULL) state khusus BERTAHAN (silver redup, bukan winner/bukan salah);
+  // C(SPYR)&D(PRPR) salah (red-flag + gray); SKIP netral "POSITION LOCKED".
   function revealBonus(ans, animate) {
-    const correct = ans.correct || [];        // [0,1]
-    const trap = ans.trap || [];              // [2,3]
+    const correct = ans.correct || [];        // [1] = NOCT winner
+    const survive = ans.survive || [];        // [0] = QULL bertahan
+    const trap = ans.trap || [];              // [2,3] = SPYR/PRPR salah
     const skipIdx = roundCards.length - 1;    // 4 = SKIP
-    correct.forEach((idx, n) => addStampToSlot(idx, STAMP.ok, "rv-correct", n * 0.18, animate));
-    const base = correct.length * 0.18;
+    correct.forEach((idx, n) => {
+      addStampToSlot(idx, STAMP.ok, "rv-correct", n * 0.18, animate);  // glow emas + CONFIRMED
+      addWinTag(idx, n * 0.18, animate);                               // label MENANG
+    });
+    let base = correct.length * 0.18;
+    survive.forEach((idx, n) => addSurviveTag(idx, base + n * 0.18, animate));  // QULL: silver + BERTAHAN
+    base += survive.length * 0.18;
     trap.forEach((idx, n) => addStampToSlot(idx, STAMP.bad, "rv-trap", base + n * 0.18, animate));
     addLockedTag(skipIdx, base + trap.length * 0.18, animate);
+  }
+
+  // V12 Fase 4 — tag emas "MENANG" (winner tunggal Bonus = NOCT).
+  function addWinTag(idx, delay, animate) {
+    const slot = soalCardsEl.children[idx];
+    if (!slot) return;
+    const tag = document.createElement("div");
+    tag.className = "soal-win-tag"; tag.textContent = "MENANG";
+    slot.appendChild(tag);
+    if (window.gsap && animate) {
+      gsap.fromTo(tag, { opacity: 0, y: 12, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)", delay: delay || 0 });
+    }
+  }
+  // V12 Fase 4 — QULL "BERTAHAN": silver redup + tag, BUKAN winner/crack.
+  function addSurviveTag(idx, delay, animate) {
+    const slot = soalCardsEl.children[idx];
+    if (!slot) return;
+    slot.classList.add("rv-survive");
+    const tag = document.createElement("div");
+    tag.className = "soal-survive-tag"; tag.textContent = "BERTAHAN";
+    slot.appendChild(tag);
+    if (window.gsap && animate) {
+      gsap.fromTo(tag, { opacity: 0, y: 12, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.6)", delay: delay || 0 });
+    }
   }
 
   // Badge NETRAL emas tenang utk kartu SKIP — tanpa benar/salah, tanpa dim.
@@ -1328,8 +1361,8 @@
       boardPanel.src = PANELS[currentKey].soal;
     }
     soalCardsEl.querySelectorAll(".soal-slot").forEach((slot) => {
-      slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down", "rv-locked");
-      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta, .soal-flag, .soal-locked-tag").forEach((s) => s.remove());
+      slot.classList.remove("rv-correct", "rv-dim", "rv-trap", "rv-up", "rv-down", "rv-locked", "rv-survive");
+      slot.querySelectorAll(".soal-stamp, .soal-crack, .soal-delta, .soal-flag, .soal-win-tag, .soal-survive-tag, .soal-locked-tag").forEach((s) => s.remove());
     });
   }
 

@@ -1106,6 +1106,33 @@ html, body {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
+/* V12 Fase 4 (Bonus) — NOCT "MENANG" (emas) vs QULL "BERTAHAN" (silver, netral-terhormat) */
+.soal-win-tag, .soal-survive-tag {
+  position: absolute; left: 50%; bottom: 12px;
+  transform: translateX(-50%);
+  padding: 6px 16px; border-radius: 16px; white-space: nowrap;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700;
+  font-size: 16px; letter-spacing: 1px; z-index: 5; pointer-events: none;
+}
+.soal-win-tag {
+  color: #0B1838;
+  background: linear-gradient(180deg, #F4E8C8, #D4AF37 60%, #9c8244 100%);
+  border: 1px solid rgba(244, 232, 200, 0.9);
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.7);
+}
+.soal-survive-tag {
+  color: #0B1838;
+  background: linear-gradient(180deg, #E8ECEF, #AEB6BD 60%, #7c858c 100%);
+  border: 1px solid rgba(232, 236, 239, 0.9);
+  box-shadow: 0 0 14px rgba(174, 182, 189, 0.55);
+}
+/* QULL "BERTAHAN": silver redup — BUKAN gold winner, BUKAN red trap */
+.soal-slot.rv-survive .soal-card {
+  filter: saturate(0.85) brightness(0.96);
+  border-color: rgba(174, 182, 189, 0.9);
+  box-shadow: 0 0 26px rgba(174, 182, 189, 0.5);
+}
+
 /* ============================================================
    V11 Fase 7 — BONUS (The Reversals): badge SKIP (pill), kartu SKIP netral,
    tag "POSITION LOCKED", + fallback kartu SKIP bila gambar 404.
