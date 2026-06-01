@@ -273,13 +273,13 @@ const WIZCO_EXPLAINER = {
     { pose: "cheer",          text: "Pemanasan beres. Lanjut ke Trial kedua!" }
   ]},
   r2: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Tuh, NOCT yang melonjak. ketika Suku bunga naik, bank yang panen." },
-    { pose: "explain",        text: "Soalnya pas Crown Rate naik, bank minjemin dengan bunga lebih mahal sementara biaya deposito naiknya lebih lambat, jadi margin bunga (NIM) melebar." },
+    { pose: "celebrate",      text: "Ketika Suku bunga naik, bank yang panen." },
+    { pose: "explain",        text: "Karena ketika Crown Rate naik, bank minjemin dengan bunga lebih mahal sementara biaya deposito naiknya lebih lambat, jadi margin bunga (NIM) melebar." },
     { pose: "thinking",       text: "Ini hukum dasar pasar: rate hike mukul growth stock, tapi malah jadi hadiah buat bank. Tech, properti, tambang, semua ketekan." },
     { pose: "cheer",          text: "Satu headline, satu pemenang. Lanjut ke Trial ketiga!" }
   ]},
   r3: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Bener, SPYR yang paling ngebut! Pas ekonomi lagi sehat, teknologi juaranya." },
+    { pose: "celebrate",      text: "Pas ekonomi lagi sehat, teknologi juaranya." },
     { pose: "explain",        text: "Di kondisi Goldilocks, bunga rendah, GDP tumbuh, inflasi jinak, growth stock napasnya paling lega." },
     { pose: "mock",           text: "Tapi inget baik-baik ya Stockrangers, kondisi ini bisa balik 180 derajat nanti. Yang menang sekarang belum tentu menang pas Bonus." },
     { pose: "cheer",          text: "Lanjut ke Trial keempat!" }
@@ -290,19 +290,16 @@ const WIZCO_EXPLAINER = {
     { pose: "cheer",          text: "Diversifikasi yang pinter kebayar. Lanjut ke Trial kelima!" }
   ]},
   r5: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Nah, ketahuan: cuma Emas, Tunai, sama Obligasi Pemerintah yang bertahan." },
     { pose: "explain",        text: "Ketiganya likuid, counter-cyclical, dan nggak nyangkut di sektor yang lagi ambruk. Obligasi malah terbang karena rate cut bikin harganya naik." },
     { pose: "thinking",       text: "Jebakannya: Deposito kekunci 12 bulan, Bitcoin malah crash 50% di awal shock, dan Saham jelas tumbang. Yang kelihatan aman belum tentu aman." },
     { pose: "cheer",          text: "Kalian selamat dari badai. Bangkit ke Trial keenam!" }
   ]},
   r6: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Tiga pemenangnya: Konstruksi (CSTR), Tambang (RBBT), sama Logistik (LUMN)." },
     { pose: "explain",        text: "Dana 50 triliun ngalir ke proyek bangunan, jadi yang paling untung ya kontraktor, pemasok material, sama yang ngangkut material-nya." },
     { pose: "mock",           text: "Yang tadi milih SPYR Teknologi? Proyek infrastruktur butuh semen sama baja, bukan server cloud." },
     { pose: "cheer",          text: "Tiap katalis punya pemenang spesifiknya sendiri. Lanjut ke Trial ketujuh!" }
   ]},
   r7: { countdown: false, lines: [
-    { pose: "celebrate",      text: "Yang sehat: QULL, NOCT, sama GRIN." },
     { pose: "explain",        text: "Ketiganya untung beneran, margin-nya stabil, utang-nya terkendali. Itu baru fundamental yang sehat." },
     { pose: "mock",           text: "Jebakannya: MIRR tumbuh 25% tapi margin-nya ambruk; SPYR tumbuh 40% tapi rugi; TARO malah turun. Growth tanpa laba cuma ilusi." },
     { pose: "cheer",          text: "Angka nggak bohong. Lanjut ke Trial kedelapan!" }
@@ -314,7 +311,6 @@ const WIZCO_EXPLAINER = {
     { pose: "cheer",          text: "Lanjut ke ronde puncak, Trial kesembilan!" }
   ]},
   r9: { countdown: false, lines: [
-    { pose: "present",        text: "Listing Day di Lyndell Exchange udah kelar. Yuk lihat hasilnya." },
     { pose: "celebrate",      text: "EVRG: uji klinisnya LULUS, melonjak +100%. Katalis biner, risiko gede tapi hadiahnya juga gede." },
     { pose: "explain",        text: "HNPR: rumor akuisisinya terbukti, naik +50%. Di pasar IPO, cerita bisa ngebakar harga walau perusahaannya belum untung." },
     { pose: "shocked",        text: "MRRT, nah ini jebakannya. Oversubscribed 8 kali, dia memang MELONJAK di hari pertama. Tapi auditor yang mundur itu bendera merah, skandalnya kebongkar, dan dia anjlok -60%." },
@@ -323,7 +319,6 @@ const WIZCO_EXPLAINER = {
     { pose: "cheer",          text: "Tapi belum kelar, masih ada satu ronde terakhir: The Reversals." }
   ]},
   bonus: { countdown: false, lines: [
-    { pose: "present",        text: "Pemenangnya NOCT, si Perbankan." },
     { pose: "explain",        text: "Pas suku bunga melonjak, margin bunga bank (NIM) melebar, jadi tiap pinjaman makin nguntungin." },
     { pose: "pointing-right", text: "Dan pas perang ngancam, kerajaan butuh dana gede, jadi dia minjem ke bank dengan bunga tinggi. Bank jadi pemodal perang." },
     { pose: "mock",           text: "Tech (SPYR) malah hancur kena bunga tinggi, itu jebakan buat yang masih nyangkut sama jawaban Trial ketiga. Properti juga runtuh gara-gara cicilan mahal." },
