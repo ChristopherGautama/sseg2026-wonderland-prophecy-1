@@ -1419,7 +1419,7 @@
       activeSlot = nextSlot;
     });
 
-    sceneLabel.textContent = (i + 1) + "/" + SCENES.length + " · " + item.name;
+    sceneLabel.textContent = item.name;
 
     playSfx("scene");                            // Fase C3 — whoosh transisi
     setSceneMusic(musicTrackForKey(item.key));   // Fase C3 — musik babak (seamless)
