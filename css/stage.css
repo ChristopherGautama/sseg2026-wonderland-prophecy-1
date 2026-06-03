@@ -869,17 +869,20 @@ html, body {
 }
 
 /* ============================================================
-   UKURAN KARTU (LED Kepo Market — penonton jauh). Ganti tier = ubah 4 angka di bawah.
-   Tier   | grid 3-4 | grid 5 | grid 6 | zoom
-   Besar  |  330px   | 315px  | 290px  | 760px (~70%)
-   L.Besar|  365px   | 345px  | 315px  | 815px (~75%)
-   Maks   |  400px   | 375px  | 340px  | 865px (~80%)  <-- AKTIF
+   UKURAN KARTU (LED Kepo Market). Batas TINGGI kartu = jarak aman ke panel soal:
+   kartu di-anchor ke bawah (bottom:40px); kartu terlalu tinggi → tepi atas + badge
+   huruf naik menutupi panel. Tinggi 340px (tier 6-kartu R5/R6/R7) sudah TERBUKTI aman.
+   Opsi grid untuk ronde 3/4/5-kartu (R1/R2/R3/R4/R8/R9/Bonus, yg tadinya numpuk):
+     A "sedikit lebih kecil" (AKTIF): 340px  (= sama dgn 6-kartu yg sudah OK)
+     B "lebih kecil lagi"           : 315px
+   --soal-card-h6 (6-kartu) JANGAN diubah — R5/R6/R7 sudah OK.
+   --soal-zoom-h (fokus 1 kartu) di luar scope perbaikan ini.
    ============================================================ */
 #stage {
-  --soal-card-h:   400px;   /* grid 3-4 opsi (R1=3, R2/R3=4) */
-  --soal-card-h5:  375px;   /* grid 5 opsi (R4, Bonus) */
-  --soal-card-h6:  340px;   /* grid 6 opsi (R5/R6/R7) */
-  --soal-zoom-h:   865px;   /* kartu saat di-zoom/focus (showcase) */
+  --soal-card-h:   340px;   /* grid 3-4 opsi (R1=3 · R2/R3/R9=4) — turun dari 400 */
+  --soal-card-h5:  340px;   /* grid 5 opsi (R4/R8/Bonus) — turun dari 375 */
+  --soal-card-h6:  340px;   /* grid 6 opsi (R5/R6/R7) — TIDAK diubah */
+  --soal-zoom-h:   865px;   /* kartu saat di-zoom/focus (showcase) — TIDAK diubah */
 }
 
 /* Band kartu pilihan (STATE B). Slot ter-reserve → terisi kiri→kanan. */
