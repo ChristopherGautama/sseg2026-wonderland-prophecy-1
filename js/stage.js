@@ -1102,19 +1102,22 @@
   // Router visual jawaban per tipe (config-driven; tak ada hardcode jawaban).
   function applyAnswerReveal(ans, key, animate) {
     if (ans.type === "alloc") revealAllocDelta(ans, animate);
-    else if (key === "bonus") revealBonus(ans, animate);          // V11 Fase 7 — A&B benar, SKIP netral
+    else if (key === "bonus") revealBonus(ans, animate);          // kasus khusus: winner + survive + trap + skip
     else if (ans.type === "multi") revealMultiPick(ans, key, animate);
     else applyAnswerStamp(animate);          // single (r2/r3)
   }
 
-  // V12 Fase 4 — REVEAL BONUS: B(NOCT) WINNER tunggal (emas + MENANG);
-  // A(QULL) state khusus BERTAHAN (silver redup, bukan winner/bukan salah);
-  // C(SPYR)&D(PRPR) salah (red-flag + gray); SKIP netral "POSITION LOCKED".
+  // REVEAL BONUS (data-driven dari ANSWERS.bonus; index = urutan CARDS.bonus):
+  //   correct → WINNER tunggal (glow emas + tag MENANG);
+  //   survive → state NETRAL "BERTAHAN" (silver redup; BUKAN winner, BUKAN salah, TANPA crack);
+  //   trap    → salah (red-flag + grayscale);
+  //   skipIdx (slot terakhir) → NETRAL "POSITION LOCKED".
+  // Urutan sekarang [SPYR,PRPR,QULL,NOCT,SKIP]: correct[3]=NOCT, survive[2]=QULL, trap[0,1]=SPYR/PRPR, skip=4.
   function revealBonus(ans, animate) {
-    const correct = ans.correct || [];        // [1] = NOCT winner
-    const survive = ans.survive || [];        // [0] = QULL bertahan
-    const trap = ans.trap || [];              // [2,3] = SPYR/PRPR salah
-    const skipIdx = roundCards.length - 1;    // 4 = SKIP
+    const correct = ans.correct || [];        // NOCT (menang)
+    const survive = ans.survive || [];        // QULL (netral/bertahan)
+    const trap = ans.trap || [];              // SPYR/PRPR (salah)
+    const skipIdx = roundCards.length - 1;    // SKIP = slot terakhir
     correct.forEach((idx, n) => {
       addStampToSlot(idx, STAMP.ok, "rv-correct", n * 0.18, animate);  // glow emas + CONFIRMED
       addWinTag(idx, n * 0.18, animate);                               // label MENANG

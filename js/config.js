@@ -141,7 +141,22 @@ const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan (ditem
 //   "single" : 1 jawaban benar.
 //   "multi"  : beberapa benar (correct[]) + sisanya trap[].
 //   "alloc"  : alokasi — tiap kartu punya hasil +/- (delta), ada urutan terbaik→terburuk.
-// ============================================================
+//
+// REVEAL 100% DATA-DRIVEN — ubah index/urutan di sini, animasi ikut otomatis (tak sentuh kode).
+// Handler aktif di stage.js: applyAnswerReveal() me-route per `type`/`key`:
+//   single → applyAnswerStamp  (correct → glow emas + CONFIRMED; lain → redup)
+//   multi  → revealMultiPick   (correct → glow emas; trap → red-flag + redup; R5 + crack)
+//   alloc  → revealAllocDelta  (results[].delta: + → glow hijau; - → redup; .pop/.flag = jebakan 2-tahap)
+//   bonus  → revealBonus       (correct=menang · survive=netral/BERTAHAN tanpa crack · trap=salah · skip=netral LOCKED)
+//
+// SPEC REVEAL LANGKAH 4 (scene R6/R7/Bonus belum di-treatment khusus, tapi data + handler SUDAH siap):
+//   R6 trio (multi)  : correctIndices = [0,2,4]            (CSTR/RBBT/LUMN)
+//   R7 trio (multi)  : correctIndices = [1,2,4]            (QULL/NOCT/GRIN)
+//   R8 alloc         : pola sama R4 — outcome per slot (results[]), bukan satu pemenang
+//   R9 alloc (maks 2): outcome per slot; MRRT = jebakan reveal (pop +35% → anjlok -50%, display-only)
+//   BONUS            : correct[3]=NOCT (menang) · trap[0,1]=SPYR/PRPR (salah) ·
+//                      survive[2]=QULL (NETRAL, JANGAN crack) · skip idx4 (NETRAL "POSITION LOCKED")
+//
 // Index mengacu ke array CARDS (0=A, 1=B, 2=C, …). Untuk alloc, field `mult` HANYA
 // untuk animasi/label reveal (display) — JANGAN dipakai menghitung skor (itu Website 2).
 const ANSWERS = {
