@@ -868,6 +868,20 @@ html, body {
           drop-shadow(0 18px 50px rgba(0, 0, 0, 0.6));
 }
 
+/* ============================================================
+   UKURAN KARTU (LED Kepo Market — penonton jauh). Ganti tier = ubah 4 angka di bawah.
+   Tier   | grid 3-4 | grid 5 | grid 6 | zoom
+   Besar  |  330px   | 315px  | 290px  | 760px (~70%)
+   L.Besar|  365px   | 345px  | 315px  | 815px (~75%)
+   Maks   |  400px   | 375px  | 340px  | 865px (~80%)  <-- AKTIF
+   ============================================================ */
+#stage {
+  --soal-card-h:   400px;   /* grid 3-4 opsi (R1=3, R2/R3=4) */
+  --soal-card-h5:  375px;   /* grid 5 opsi (R4, Bonus) */
+  --soal-card-h6:  340px;   /* grid 6 opsi (R5/R6/R7) */
+  --soal-zoom-h:   865px;   /* kartu saat di-zoom/focus (showcase) */
+}
+
 /* Band kartu pilihan (STATE B). Slot ter-reserve → terisi kiri→kanan. */
 .soal-cards {
   position: absolute; left: 50%; bottom: 40px;
@@ -885,22 +899,22 @@ html, body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .soal-card {
-  height: 300px; width: auto; display: block;
+  height: var(--soal-card-h, 400px); width: auto; display: block;
   border-radius: 12px;
   border: 1px solid rgba(201, 169, 97, 0.5);
   box-shadow: 0 0 26px rgba(201, 169, 97, 0.32), 0 8px 22px rgba(0, 0, 0, 0.55);
 }
 /* Ronde dgn banyak kartu → perkecil agar muat & tetap kebaca */
-.soal-cards[data-count="5"] .soal-card { height: 290px; }
-.soal-cards[data-count="6"] .soal-card { height: 268px; }
+.soal-cards[data-count="5"] .soal-card { height: var(--soal-card-h5, 375px); }
+.soal-cards[data-count="6"] .soal-card { height: var(--soal-card-h6, 340px); }
 
 /* Badge huruf A/B/C… di band (emas, senada sistem lama) */
 .soal-badge {
-  position: absolute; top: -18px; left: 50%;
+  position: absolute; top: -20px; left: 50%;
   transform: translateX(-50%);
-  width: 50px; height: 50px;
+  width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 24px;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 27px;
   color: #0B1838;
   background: radial-gradient(circle at 35% 30%, #F4E8C8, #C9A961 58%, #9c8244 100%);
   border-radius: 50%;
@@ -927,7 +941,7 @@ html, body {
    Di dalam stacking context .soal-showcase (z5) → di atas overlay gelap, di bawah kartu. */
 .soal-spot {
   position: absolute; left: 50%; top: 50%;
-  width: 1180px; height: 920px; max-width: 84%;
+  width: 1360px; height: 1060px; max-width: 90%;
   transform: translate(-50%, -50%);
   opacity: 0; z-index: 1; pointer-events: none;
   background: radial-gradient(ellipse at center,
@@ -942,17 +956,17 @@ html, body {
   transform-origin: 50% 50%; opacity: 0;
 }
 .soal-showcase-card {
-  height: 670px; width: auto; display: block;     /* ~62% tinggi layar */
+  height: var(--soal-zoom-h, 865px); width: auto; display: block;   /* ~80% tinggi layar */
   border-radius: 16px;
   border: 1px solid rgba(201, 169, 97, 0.6);
   box-shadow: 0 0 70px rgba(212, 175, 55, 0.5), 0 20px 60px rgba(0, 0, 0, 0.65);
 }
 .soal-showcase-badge {
-  position: absolute; top: -30px; left: 50%;
+  position: absolute; top: -34px; left: 50%;
   transform: translateX(-50%);
-  width: 82px; height: 82px;
+  width: 92px; height: 92px;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 40px;
+  font-family: 'Cinzel', Georgia, serif; font-weight: 700; font-size: 44px;
   color: #0B1838;
   background: radial-gradient(circle at 35% 30%, #F4E8C8, #C9A961 58%, #9c8244 100%);
   border-radius: 50%;
@@ -1181,7 +1195,7 @@ html, body {
 }
 /* Fallback CSS kartu SKIP (kalau skip-card.png 404) — tema gembok/emas */
 .skip-card-fallback {
-  height: 290px; width: 193px; box-sizing: border-box;
+  height: var(--soal-card-h5, 375px); width: 250px; box-sizing: border-box;
   border-radius: 12px; border: 2px solid #C9A961;
   background: linear-gradient(160deg, rgba(20, 34, 68, 0.96), rgba(11, 24, 56, 0.96));
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1193,7 +1207,7 @@ html, body {
 }
 .skip-card-fallback .sk-sub  { font-family: Georgia, serif; color: #F4E8C8; font-size: 14px; letter-spacing: 1px; }
 .skip-card-fallback .sk-sub2 { font-family: Georgia, serif; color: rgba(244,232,200,0.65); font-size: 12px; letter-spacing: 1px; }
-.skip-card-fallback--big { height: 670px; width: 446px; gap: 18px; }
+.skip-card-fallback--big { height: var(--soal-zoom-h, 865px); width: 576px; gap: 18px; }
 .skip-card-fallback--big .sk-title { font-size: 62px; }
 .skip-card-fallback--big .sk-sub  { font-size: 28px; }
 .skip-card-fallback--big .sk-sub2 { font-size: 22px; }
