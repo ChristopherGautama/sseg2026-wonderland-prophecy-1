@@ -86,15 +86,15 @@ const SCENES = [
 // ============================================================
 const ROUNDS = {
   opening: { title:"WONDERLAND PROPHECY", subtitle:"The Trials of the Oracle", scenario:"Kerajaan Lyndell · Crownsfield. Sepuluh Oracle akan membaca arah pasar melalui sembilan trial. Bacalah tanda, pasang keyakinanmu." },
-  r1: { title:"CHART CONTINUATION", subtitle:"Trial the First", scenario:"SPYR · Spire Tech. Double bottom di 380, recovery ke 420, volume naik. CEO teken kontrak Bank of Lyndell. Ke mana SPYR dalam 7 hari?", wager:"10–50", mult:"×1.0" },
+  r1: { title:"CHART CONTINUATION", subtitle:"Trial the First", scenario:"SPYR · Spire Tech. Harga turun lalu dua kali mantul di 380, naik lagi ke 420, volume menguat. CEO teken kontrak Bank of Lyndell. Ke mana SPYR dalam 7 hari?", wager:"10–50", mult:"×1.0" },
   r2: { title:"THE HEADLINE STRIKES", subtitle:"Trial the Second", scenario:"THE LYNDELL JOURNAL — Bank of Lyndell naikkan Crown Rate 5% → 7% (darurat, lawan inflasi). Sektor mana paling DIUNTUNGKAN?", wager:"20–100", mult:"×1.0" },
-  r3: { title:"SECTOR RACE", subtitle:"Trial the Third", scenario:"MACRO DASHBOARD — Crown Rate stabil 5%, GDP +4.5%, Inflasi 3.2%, Trade Surplus rekor. Pasar Goldilocks — sektor mana sampai garis emas duluan?", wager:"20–100", mult:"×1.2" },
-  r4: { title:"THE ORACLE'S PORTFOLIO", subtitle:"Trial the Fourth", scenario:"BANK OF LYNDELL — Crown Rate dipotong 75 bps, 5% → 4.25%. Inflasi 2.5%. Alokasikan 100 ke 5 saham (min 2, maks 50/saham).", wager:"100", mult:"×1.5" },
+  r3: { title:"SECTOR RACE", subtitle:"Trial the Third", scenario:"MACRO DASHBOARD — Crown Rate stabil 5%, GDP +4.5%, Inflasi 3.2%, Trade Surplus rekor. Pasar Goldilocks — sektor mana sampai garis emas duluan?", wager:"20–100", mult:"×1.5" },
+  r4: { title:"THE ORACLE'S PORTFOLIO", subtitle:"Trial the Fourth", scenario:"BANK OF LYNDELL — Crown Rate dipotong 75 bps, 5% → 4.25%. Inflasi 2.5%. Alokasikan 100 ke 5 saham (min 2, maks 50/saham).", wager:"100", mult:"×1.5", alloc:{ total:100, minStocks:2, maxPerStock:50, step:10 } },
   r5: { title:"BLACK SWAN SURVIVAL", subtitle:"Trial the Fifth", scenario:"EMERGENCY — Pandemi Crimson Fever. Lockdown 90 hari. Pasar crash 25%, Crown Rate darurat 1%, deflasi 0.5%. Pilih 3 aset yang SURVIVE.", wager:"30–150", mult:"×1.5" },
-  r6: { title:"THE CATALYST TRIAL", subtitle:"Trial the Sixth", scenario:"LYNDELL INFRASTRUCTURE BILL — 50 TRILIUN LULUS PARLEMEN. Kereta cepat, pelabuhan, tol, RS kerajaan. Sektor mana paling melonjak? Pilih 3.", wager:"30–150", mult:"×1.8" },
+  r6: { title:"THE CATALYST TRIAL", subtitle:"Trial the Sixth", scenario:"LYNDELL INFRASTRUCTURE BILL — 50 TRILIUN LULUS PARLEMEN. Kereta cepat, pelabuhan, tol, RS kerajaan. Sektor mana paling melonjak? Pilih 3.", wager:"30–150", mult:"×2.0" },
   r7: { title:"THE EARNINGS VERDICT", subtitle:"Trial the Seventh", scenario:"EARNINGS SEASON — 6 emiten rilis laporan kuartalan. Growth tinggi belum tentu sehat. Baca margin, utang, profitabilitas. Pilih 3 paling KUAT.", wager:"30–150", mult:"×2.0" },
-  r8: { title:"THE DEVALUATION GAMBIT", subtitle:"Trial the Eighth", scenario:"CROWN COIN ANJLOK 30% — krisis nilai tukar. Biaya impor melonjak, ekspor jauh lebih kompetitif. Alokasikan 100 ke 5 saham.", wager:"100", mult:"×2.2" },
-  r9: { title:"WONDERLAND IPO BATTLE", subtitle:"Trial the Ninth — The Final Trial", scenario:"LYNDELL EXCHANGE — LISTING DAY. 4 IPO debut. Baca dossier, dukung MAKS 2. Ini due diligence, bukan tebak buta.", wager:"100", mult:"×2.5" },
+  r8: { title:"THE DEVALUATION GAMBIT", subtitle:"Trial the Eighth", scenario:"CROWN COIN ANJLOK 30% — krisis nilai tukar. Biaya impor melonjak, ekspor jauh lebih kompetitif. Alokasikan 100 ke 5 saham.", wager:"100", mult:"×2.0", alloc:{ total:100, minStocks:2, maxPerStock:50, step:10 } },
+  r9: { title:"WONDERLAND IPO BATTLE", subtitle:"Trial the Ninth — The Final Trial", scenario:"LYNDELL EXCHANGE — LISTING DAY. 4 IPO debut. Baca dossier, dukung MAKS 2. Ini due diligence, bukan tebak buta.", wager:"100", mult:"×2.5", alloc:{ total:100, maxPick:2, allowSkip:true } },
   bonus: { title:"THE REVERSALS", subtitle:"Bonus Trial — Opt-in / Opt-out", scenario:"EMERGENCY REVERSAL — Crown Rate +150 bps darurat, inflasi meledak 8%, tensi perbatasan Mordheim. Pasar panik. Sektor mana SURVIVE? (atau SKIP untuk kunci posisi).", wager:"50–200 / SKIP", mult:"×2.5" },
   closing: { title:"THE PROPHECY IS COMPLETE", subtitle:"Thank you, Oracles of Lyndell", scenario:"SSEG 2026 · Wonderland Prophecy" }
 };
@@ -108,19 +108,31 @@ const TIMER_SECONDS = { r1:90, r2:90, r3:90, r4:150, r5:150, r6:150, r7:150, r8:
 // Hanya scene "bg" ronde (r1–r9 + bonus) yang punya kartu.
 // Opening / Closing / Transition TIDAK ada di sini → tanpa kartu.
 // ============================================================
+// URUTAN FINAL & HARDCODED (tidak diacak ulang). Index 0=A, 1=B, 2=C, 3=D, 4=E, 5=F.
+// Gambar kartu TIDAK memuat huruf — huruf ditempel via CARD_BADGES sesuai posisi di array ini.
 const CARDS = {
-  r1: [ "assets/img/cards/prediction/r1-continuation-down.png", "assets/img/cards/prediction/r1-double-bottom.png", "assets/img/cards/prediction/r1-sideways.png" ],
-  r2: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png" ],
-  r3: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png" ],
-  r4: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/grin-asset-card.png" ],
-  r5: [ "assets/img/cards/defensive/gold.png", "assets/img/cards/defensive/cash.png", "assets/img/cards/defensive/gov-bond.png", "assets/img/cards/defensive/deposito.png", "assets/img/cards/defensive/bitcoin.png", "assets/img/cards/defensive/saham-index.png" ],
-  r6: [ "assets/img/cards/universe/cstr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/lumn-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png" ],
-  r7: [ "assets/img/cards/earnings/qull-earnings-card.png", "assets/img/cards/earnings/mirr-earnings-card.png", "assets/img/cards/earnings/noct-earnings-card.png", "assets/img/cards/earnings/spyr-earnings-card.png", "assets/img/cards/earnings/grin-earnings-card.png", "assets/img/cards/earnings/taro-earnings-card.png" ], // V12 Fase 2 — earnings cards A–F (qull·mirr·noct·spyr·grin·taro)
-  r8: [ "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/grin-asset-card.png", "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png" ],
-  r9: [ "assets/img/cards/ipo/hnpr-ipo-card.png", "assets/img/cards/ipo/mrrt-ipo-card.png", "assets/img/cards/ipo/lrbk-ipo-card.png", "assets/img/cards/ipo/evrg-ipo-card.png" ],
-  bonus: [ "assets/img/cards/bonus/qull-bonus-card.png", "assets/img/cards/bonus/noct-bonus-card.png", "assets/img/cards/bonus/spyr-bonus-card.png", "assets/img/cards/bonus/prpr-bonus-card.png", "assets/img/cards/bonus/skip-card.png" ]
+  // [continuation-down, sideways, double-bottom] — file double-bottom tampil "BULLISH".
+  r1: [ "assets/img/cards/prediction/r1-continuation-down.png", "assets/img/cards/prediction/r1-sideways.png", "assets/img/cards/prediction/r1-double-bottom.png" ],
+  // [SPYR, PRPR, RBBT, NOCT]
+  r2: [ "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/noct-asset-card.png" ],
+  // [QULL, SPYR, PRPR, NOCT]
+  r3: [ "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/prpr-asset-card.png", "assets/img/cards/universe/noct-asset-card.png" ],
+  // [NOCT, SPYR, GRIN, MIRR, QULL]
+  r4: [ "assets/img/cards/universe/noct-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/grin-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/qull-asset-card.png" ],
+  // [Deposito, Gold, Bitcoin, Cash, Index, GovBond]
+  r5: [ "assets/img/cards/defensive/deposito.png", "assets/img/cards/defensive/gold.png", "assets/img/cards/defensive/bitcoin.png", "assets/img/cards/defensive/cash.png", "assets/img/cards/defensive/saham-index.png", "assets/img/cards/defensive/gov-bond.png" ],
+  // [CSTR, SPYR, RBBT, QULL, LUMN, MIRR]
+  r6: [ "assets/img/cards/universe/cstr-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/qull-asset-card.png", "assets/img/cards/universe/lumn-asset-card.png", "assets/img/cards/universe/mirr-asset-card.png" ],
+  // [MIRR, QULL, NOCT, SPYR, GRIN, TARO]
+  r7: [ "assets/img/cards/earnings/mirr-earnings-card.png", "assets/img/cards/earnings/qull-earnings-card.png", "assets/img/cards/earnings/noct-earnings-card.png", "assets/img/cards/earnings/spyr-earnings-card.png", "assets/img/cards/earnings/grin-earnings-card.png", "assets/img/cards/earnings/taro-earnings-card.png" ],
+  // [MIRR, RBBT, SPYR, GRIN, NOCT]
+  r8: [ "assets/img/cards/universe/mirr-asset-card.png", "assets/img/cards/universe/rbbt-asset-card.png", "assets/img/cards/universe/spyr-asset-card.png", "assets/img/cards/universe/grin-asset-card.png", "assets/img/cards/universe/noct-asset-card.png" ],
+  // [LRBK, EVRG, MRRT, HNPR]
+  r9: [ "assets/img/cards/ipo/lrbk-ipo-card.png", "assets/img/cards/ipo/evrg-ipo-card.png", "assets/img/cards/ipo/mrrt-ipo-card.png", "assets/img/cards/ipo/hnpr-ipo-card.png" ],
+  // [SPYR, PRPR, QULL, NOCT, SKIP]
+  bonus: [ "assets/img/cards/bonus/spyr-bonus-card.png", "assets/img/cards/bonus/prpr-bonus-card.png", "assets/img/cards/bonus/qull-bonus-card.png", "assets/img/cards/bonus/noct-bonus-card.png", "assets/img/cards/bonus/skip-card.png" ]
 };
-const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan
+const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan (ditempel by posisi)
 
 // ============================================================
 // FASE C2 — Kunci jawaban + tipe ronde (untuk fase REVEAL).
@@ -130,17 +142,26 @@ const CARD_BADGES = ["A", "B", "C", "D", "E", "F"]; // label urut pilihan
 //   "multi"  : beberapa benar (correct[]) + sisanya trap[].
 //   "alloc"  : alokasi — tiap kartu punya hasil +/- (delta), ada urutan terbaik→terburuk.
 // ============================================================
+// Index mengacu ke array CARDS (0=A, 1=B, 2=C, …). Untuk alloc, field `mult` HANYA
+// untuk animasi/label reveal (display) — JANGAN dipakai menghitung skor (itu Website 2).
 const ANSWERS = {
-  r1: { type:"single", correct:[1], note:"Double Bottom — reversal bullish ke 460." },
-  r2: { type:"single", correct:[1], note:"NOCT — sektor defensif diuntungkan saat suku bunga naik." },
-  r3: { type:"single", correct:[0], note:"SPYR — growth/tech memimpin pasar Goldilocks." },
-  r4: { type:"alloc", results:[ {i:0,delta:"+15"},{i:3,delta:"+8"},{i:1,delta:"+4"},{i:2,delta:"+2"},{i:4,delta:"-4"} ], note:"SPYR & MIRR terbaik; GRIN rugi." },
-  r5: { type:"multi", correct:[0,1,2], trap:[3,4,5], note:"Trio bertahan: Gold + Cash + Gov-Bond. Trap: Deposito/Bitcoin/Saham." },
-  r6: { type:"multi", correct:[0,1,2], trap:[3,4,5], note:"Trio katalis: CSTR + RBBT + LUMN." },
-  r7: { type:"multi", correct:[0,2,4], trap:[1,3,5], note:"Trio sehat: QULL + NOCT + GRIN. Trap: MIRR/SPYR/TARO." },
-  r8: { type:"alloc", results:[ {i:0,delta:"+20"},{i:1,delta:"+9"},{i:2,delta:"+2"},{i:3,delta:"-8"},{i:4,delta:"-6"} ], note:"RBBT & GRIN terbaik (ekspor); MIRR/SPYR rugi." },
-  r9: { type:"alloc", results:[ {i:3,delta:"+100"},{i:0,delta:"+50"},{i:2,delta:"+10"},{i:1,delta:"-60",pop:"+35",flag:"SKANDAL"} ], note:"EVRG juara; HNPR kuat; LRBK stabil; MRRT pop hari-1 lalu skandal audit." }, // V12 Fase 3
-  bonus: { type:"multi", correct:[1], survive:[0], trap:[2,3], note:"NOCT MENANG (NIM melebar + pemodal perang). QULL hanya BERTAHAN, bukan menang. SPYR/PRPR jebakan. SKIP netral." } // V12 Fase 4
+  r1: { type:"single", correct:[2], note:"Double Bottom — reversal bullish ke 460." },
+  r2: { type:"single", correct:[3], note:"NOCT — sektor defensif diuntungkan saat suku bunga naik." },
+  r3: { type:"single", correct:[1], note:"SPYR — growth/tech memimpin pasar Goldilocks." },
+  // [NOCT, SPYR, GRIN, MIRR, QULL] → SPYR & MIRR naik, NOCT & GRIN turun.
+  r4: { type:"alloc", results:[ {i:1,delta:"+15",mult:2.5},{i:3,delta:"+8",mult:1.5},{i:4,delta:"+2",mult:1.0},{i:0,delta:"-3",mult:0.5},{i:2,delta:"-4",mult:0.5} ], note:"SPYR & MIRR terbaik; NOCT & GRIN rugi." },
+  // [Deposito, Gold, Bitcoin, Cash, Index, GovBond] → benar Gold/Cash/GovBond.
+  r5: { type:"multi", correct:[1,3,5], trap:[0,2,4], note:"Trio bertahan: Gold + Cash + Gov-Bond. Trap: Deposito/Bitcoin/Saham-Index." },
+  // [CSTR, SPYR, RBBT, QULL, LUMN, MIRR] → benar CSTR/RBBT/LUMN.
+  r6: { type:"multi", correct:[0,2,4], trap:[1,3,5], note:"Trio katalis: CSTR + RBBT + LUMN." },
+  // [MIRR, QULL, NOCT, SPYR, GRIN, TARO] → benar QULL/NOCT/GRIN.
+  r7: { type:"multi", correct:[1,2,4], trap:[0,3,5], note:"Trio sehat: QULL + NOCT + GRIN. Trap: MIRR/SPYR/TARO." },
+  // [MIRR, RBBT, SPYR, GRIN, NOCT] → RBBT & GRIN naik (ekspor), MIRR & SPYR turun.
+  r8: { type:"alloc", results:[ {i:1,delta:"+20",mult:2.5},{i:3,delta:"+9",mult:1.5},{i:4,delta:"+2",mult:1.0},{i:0,delta:"-8",mult:0},{i:2,delta:"-6",mult:0} ], note:"RBBT & GRIN terbaik (ekspor); MIRR/SPYR rugi." },
+  // [LRBK, EVRG, MRRT, HNPR] → EVRG juara, HNPR kuat, LRBK stabil, MRRT pop lalu skandal.
+  r9: { type:"alloc", results:[ {i:1,delta:"+100",mult:2.0},{i:3,delta:"+50",mult:1.5},{i:0,delta:"+10",mult:1.1},{i:2,delta:"-50",mult:-0.5,pop:"+35",flag:"SKANDAL"} ], note:"EVRG juara; HNPR kuat; LRBK stabil; MRRT pop hari-1 lalu skandal audit." },
+  // [SPYR, PRPR, QULL, NOCT, SKIP] → NOCT(3) menang; QULL(2) BERTAHAN/netral; SPYR/PRPR jebakan; SKIP(4) netral.
+  bonus: { type:"multi", correct:[3], survive:[2], trap:[0,1], note:"NOCT MENANG (NIM melebar + pemodal perang). QULL hanya BERTAHAN, bukan menang. SPYR/PRPR jebakan. SKIP netral." }
 };
 
 // ============================================================
@@ -199,7 +220,7 @@ const WIZCO_BRIEFING = {
     { pose: "present",        text: "Trial ketiga: Sector Race. Empat sektor siap balapan dari garis start." },
     { pose: "magnifier",      text: "Kondisi ekonomi Lyndell lagi enak banget: Crown Rate stabil 5%, GDP tumbuh 4.5%, inflasi adem di 3.2%, surplus dagang pecah rekor. Ini yang namanya Goldilocks." },
     { pose: "pointing-right", text: "Sektor mana yang lari paling kencang dalam 30 hari ke depan? Kali ini bukan baca satu berita, tapi baca seluruh kondisi pasar." },
-    { pose: "explain",        text: "Pilih satu sektor, pasang 20 sampai 100 Poin Keyakinan, kelipatan 5, multiplier naik jadi kali 1.2." },
+    { pose: "explain",        text: "Pilih satu sektor, pasang 20 sampai 100 Poin Keyakinan, kelipatan 5, multiplier naik jadi kali 1.5." },
     { pose: "mock",           text: "Tapi inget ya Stockrangers, kondisi seenak ini bisa balik 180 derajat nanti. Yang menang sekarang, belum tentu menang terus." },
     { pose: "cheer",          text: "Siapa yang paling ngebut? Gas, Trial ketiga!" }
   ]},
@@ -223,7 +244,7 @@ const WIZCO_BRIEFING = {
     { pose: "present",        text: "Trial keenam: The Catalyst Trial. Pandemi udah lewat, Lyndell bangkit lagi." },
     { pose: "scroll",         text: "Parlemen ngesahin Infrastructure Bill 50 Triliun: kereta cepat, pelabuhan, jalan tol, rumah sakit kerajaan. Duit gede lagi ngalir." },
     { pose: "explain",        text: "Mekaniknya sama kayak tadi: pilih TIGA dari enam sektor growth. Bedanya, sekarang kita berburu PELUANG, bukan bertahan dari krisis." },
-    { pose: "pointing-left",  text: "Pasang 30 sampai 150 Poin Keyakinan, kelipatan 5, multiplier naik ke kali 1.8. Mikir peluang emang lebih susah daripada cari aman." },
+    { pose: "pointing-left",  text: "Pasang 30 sampai 150 Poin Keyakinan, kelipatan 5, multiplier naik ke kali 2.0. Mikir peluang emang lebih susah daripada cari aman." },
     { pose: "thinking",       text: "Pertanyaan kuncinya: sektor mana yang paling kebagian dampak dari aliran dana ini? Siapa yang paling banyak nyerap proyek segede ini?" },
     { pose: "cheer",          text: "Pas kerajaan makmur, tiga sektor bakal melesat. Gas, Trial keenam!" }
   ]},
@@ -239,7 +260,7 @@ const WIZCO_BRIEFING = {
     { pose: "shocked",        text: "Trial kedelapan: The Devaluation Gambit. Mata uang Lyndell lagi goyah." },
     { pose: "scroll",         text: "Crown Coin anjlok 30% lawan mata uang asing. Biaya impor jadi mahal; tapi produk ekspor malah jauh lebih laku di pasar dunia." },
     { pose: "explain",        text: "Mirip Trial keempat, kalian bagi 100 poin ke LIMA saham, kelipatan 10. Tapi sekarang medannya kurs: eksportir pesta, importir kelaparan." },
-    { pose: "pointing-right", text: "Total poin-nya wajib 100, multiplier kali 2.2. Coba pikir: siapa yang untung pas mata uang melemah, dan siapa yang malah buntung?" },
+    { pose: "pointing-right", text: "Total poin-nya wajib 100, multiplier kali 2.0. Coba pikir: siapa yang untung pas mata uang melemah, dan siapa yang malah buntung?" },
     { pose: "mock",           text: "Dan inget ya, nggak ada saham yang selalu menang. Saham favorit di kondisi normal bisa jadi pecundang pas kurs balik arah." },
     { pose: "cheer",          text: "Pas mata uang jatuh, baca arahnya. Gas, Trial kedelapan!" }
   ]},
