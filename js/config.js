@@ -211,7 +211,7 @@ const WIZCO_BRIEFING = {
     { pose: "explain",        text: "Hari ini kalian tidak sekadar ikut bermain. Kalianlah yang akan membaca arah pasar dan menentukan ke mana harga bergerak." },
     { pose: "explain",        text: "Aturannya sederhana, dan dipakai di sembilan Round: baca skenario di layar, tulis jawaban di Prophecy Card, lalu pasang Poin Keyakinan kalian." },
     { pose: "present",        text: "Poin Keyakinan adalah ukuran seberapa percaya diri kalian dengan jawaban yang dipilih. Kalau jawaban benar, kalian mendapat tambahan Poin Keyakinan. Kalau salah, Poin Keyakinan yang dipasang akan hangus." },
-    { pose: "explain",        text: "Penting ya, Stockrangers: di setiap Round, memasang Poin Keyakinan itu WAJIB. Hanya di Round bonus terakhir nanti kalian boleh memilih untuk tidak ikut." },
+    { pose: "explain",        text: "Penting ya, Stockrangers: di setiap Round, memasang Poin Keyakinan itu WAJIB." },
     { pose: "thinking",       text: "Jumlah yang boleh dipasang ada batas minimal dan maksimal, selalu kelipatan 5, dan rentangnya akan muncul di layar setiap Round. Makin besar yang kalian pasang, makin besar tambahannya kalau benar, tapi makin besar pula yang hilang kalau salah." },
     { pose: "present",        text: "Dan satu hal lagi: setiap Round, multiplier-nya naik bertahap, dari kali 1.0 sampai kali 2.5. Jadi pertimbangkan baik-baik ya. Setiap keputusan yang kalian ambil sangat menentukan." },
     { pose: "cheer",          text: "Baik, cukup pengantarnya. Stockrangers, kita mulai!" }
@@ -268,7 +268,7 @@ const WIZCO_BRIEFING = {
     { pose: "present",        text: "Round 7: The Earnings Verdict. Musim laporan keuangan telah tiba." },
     { pose: "scroll",         text: "Enam emiten Lyndell merilis kinerja kuartalan. Tapi ingat, pertumbuhan yang tinggi belum tentu berarti perusahaannya sehat." },
     { pose: "magnifier",      text: "Tugas kalian: pilih TEPAT TIGA emiten dengan fundamental paling KUAT, bukan yang pertumbuhannya paling besar, melainkan yang paling sehat." },
-    { pose: "explain",        text: "Baca margin, utang, dan profitabilitasnya. Paket trio, pasang 30 sampai 150 Poin Keyakinan, kelipatan 5, wajib diisi. Multiplier kali 2.0, taruhannya makin tinggi." },
+    { pose: "explain",        text: "Baca margin, utang, dan profitabilitasnya. Paket trio, pasang 30 sampai 150 Poin Keyakinan, kelipatan 5, wajib diisi. Multiplier kali 2.0, poin keyakinan makin tinggi." },
     { pose: "thinking",       text: "Jangan tertipu angka yang terlihat menawan. Pertumbuhan tinggi tanpa laba dan tanpa margin yang sehat hanyalah jebakan." },
     { pose: "cheer",          text: "Angka tidak berbohong, baca laporannya. Mari mulai Round 7!" }
   ]},
